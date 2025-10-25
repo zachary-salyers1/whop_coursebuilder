@@ -167,8 +167,7 @@ Generate a comprehensive course structure following the guidelines. Return ONLY 
             topics: mod.chapters.map((ch: any) => ch.title),
           })),
         },
-        fullStructure: analysis, // Store the detailed structure for content generation
-      };
+      } as PDFAnalysisResponse;
     } catch (error) {
       console.error('PDF Analysis Error:', error);
       throw new Error(

@@ -7,15 +7,15 @@ export async function GET(request: NextRequest) {
 
     // Get user from Whop token
     const tokenResult = await whopSdk.verifyUserToken(headers);
-    const user = await whopSdk.users.getUser({ userId: tokenResult.userId });
+
+    // Get company ID from header
+    const companyId = headers.get('x-whop-company-id') || headers.get('whop-company-id');
 
     return NextResponse.json({
       success: true,
       data: {
         id: tokenResult.userId,
-        name: user.name,
-        username: user.username,
-        companyId: user.companyId,
+        companyId: companyId,
       },
     });
   } catch (error) {
@@ -25,8 +25,6 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           id: 'user_5x9k4ZJpf1ZK2',
-          name: 'Development User',
-          username: 'dev_user',
           companyId: 'biz_1Io4EO2Twj9wo7',
         },
       });

@@ -352,42 +352,20 @@ export class CourseGenerationService {
 
       const structure = generation.structureJson as unknown as CourseStructure;
 
-      // Publish to Whop
-      const result = await WhopAPIService.publishCourse(companyId, structure);
+      // Attempt to publish to Whop (currently not implemented)
+      try {
+        await WhopAPIService.publishCourse(companyId, structure);
+      } catch (error) {
+        // Expected - Whop API publishing not yet implemented
+        // Return structure for manual course creation
+        throw error;
+      }
 
-      // Update generation with Whop IDs
-      await db
-        .update(courseGenerations)
-        .set({
-          whopExperienceId: result.experienceId,
-          status: 'published',
-          updatedAt: new Date(),
-        })
-        .where(eq(courseGenerations.id, generationId));
-
-      // Log publish event
-      await db.insert(usageEvents).values({
-        userId: generation.userId,
-        generationId,
-        eventType: 'course_published',
-        metadata: {
-          experienceId: result.experienceId,
-          modulesCreated: result.modulesCreated,
-          chaptersCreated: result.chaptersCreated,
-          lessonsCreated: result.lessonsCreated,
-        },
-        createdAt: new Date(),
-      });
-
+      // This won't be reached until Whop API is implemented
       return {
-        success: true,
-        generationId,
-        whopExperienceId: result.experienceId,
-        whopCourseUrl: result.courseUrl,
-        structure,
-        wasOverage: generation.generationType === 'overage',
-        overageCharge: Number(generation.overageCharge),
-      };
+        success: false,
+        error: 'Publishing not yet implemented',
+      } as any;
     } catch (error) {
       console.error('Publish to Whop Error:', error);
       throw new Error(

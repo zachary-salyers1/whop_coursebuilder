@@ -5,6 +5,7 @@ import { pdfUploads } from '../db/schema';
 import type { NewPdfUpload } from '../types/database';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { eq } from 'drizzle-orm';
 
 // Configure PDF.js worker for Node.js environment
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -107,7 +108,7 @@ export class PDFService {
       const [upload] = await db
         .select()
         .from(pdfUploads)
-        .where((t) => t.id === pdfUploadId);
+        .where(eq(pdfUploads.id, pdfUploadId));
 
       if (!upload) {
         throw new Error('PDF upload not found');
@@ -132,7 +133,7 @@ export class PDFService {
             textLength: text.length,
           },
         })
-        .where((t) => t.id === pdfUploadId);
+        .where(eq(pdfUploads.id, pdfUploadId));
 
       console.log('processPDF: Database updated successfully');
 
@@ -149,7 +150,7 @@ export class PDFService {
             error: error instanceof Error ? error.message : 'Unknown error',
           },
         })
-        .where ((t) => t.id === pdfUploadId);
+        .where(eq(pdfUploads.id, pdfUploadId));
 
       throw error;
     }
@@ -162,7 +163,7 @@ export class PDFService {
     const [upload] = await db
       .select()
       .from(pdfUploads)
-      .where((t) => t.id === pdfUploadId)
+      .where(eq(pdfUploads.id, pdfUploadId))
       .limit(1);
 
     console.log('getExtractedText: Retrieved upload, rawText length:', upload?.rawText?.length || 0);
