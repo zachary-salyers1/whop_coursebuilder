@@ -6,9 +6,19 @@ import type {
   ContentGenerationResponse,
 } from '../types/domain';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 // PROMPT 1: PDF STRUCTURE ANALYSIS (from aiprompts.md)
 const STRUCTURE_ANALYSIS_SYSTEM = `You are an expert instructional designer who creates engaging online courses. Your task is to analyze a PDF document and generate an optimal course structure that follows adult learning principles.
@@ -128,6 +138,7 @@ ${request.pdfText.slice(0, 60000)}
 
 Generate a comprehensive course structure following the guidelines. Return ONLY the JSON structure.`;
 
+      const openai = getOpenAIClient();
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -240,7 +251,8 @@ ${lessonsPrompt}
 
 Generate complete, engaging content for ALL lessons listed above. Return ONLY the JSON structure with all lesson contents.`;
 
-        const response = await openai.chat.completions.create({
+        const openai = getOpenAIClient();
+      const response = await openai.chat.completions.create({
           model: 'gpt-4o',
           messages: [
             {
