@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardClient from './dashboard-client';
+import UploadClient from "./upload-client";
 
-export default function DashboardPage() {
+export default function UploadPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,5 +30,5 @@ export default function DashboardPage() {
     );
   }
 
-  return <DashboardClient userId={userId} />;
+  return <UploadClient userId={userId} userName="User" />;
 }

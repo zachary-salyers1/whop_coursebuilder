@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx whop-proxy:*)",
       "Bash(npx next dev:*)",
-      "Bash(pnpm dev:*)"
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": []
   }
