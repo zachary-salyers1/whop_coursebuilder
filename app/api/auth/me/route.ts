@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         id: tokenResult.userId,
         name: user.name,
         username: user.username,
-        email: user.email,
+        companyId: user.companyId,
       },
     });
   } catch (error) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
           id: 'user_5x9k4ZJpf1ZK2',
           name: 'Development User',
           username: 'dev_user',
-          email: 'dev@example.com',
+          companyId: 'biz_1Io4EO2Twj9wo7',
         },
       });
     }
