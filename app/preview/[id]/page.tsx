@@ -54,19 +54,28 @@ export default function PreviewPage() {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [expandedLessons, setExpandedLessons] = useState<Set<string>>(new Set());
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [showCourseSelector, setShowCourseSelector] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   const generationId = params.id as string;
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        console.log('👤 Fetching user data...');
         const res = await fetch('/api/auth/me');
         const data = await res.json();
+        console.log('📥 User API response:', data);
         if (data.success) {
+          console.log('✅ User data received:', data.data);
           setUser(data.data);
+        } else {
+          console.error('❌ User fetch failed:', data);
         }
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error('❌ Failed to fetch user:', error);
       }
     };
 
@@ -99,23 +108,72 @@ export default function PreviewPage() {
     }
   }, [generationId]);
 
-  const handlePublish = async () => {
-    if (!generation || !user?.companyId) return;
+  const loadCourses = async () => {
+    if (!user?.companyId) return;
 
-    setPublishing(true);
+    setLoadingCourses(true);
     try {
+      const res = await fetch(`/api/courses/list?company_id=${user.companyId}`);
+      const data = await res.json();
+      if (data.success) {
+        setCourses(data.courses);
+        if (data.courses.length > 0) {
+          setSelectedCourseId(data.courses[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load courses:', error);
+      alert('Failed to load courses');
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  const handlePublishClick = async () => {
+    if (!generation || !user?.companyId) {
+      alert('Missing generation or company data');
+      return;
+    }
+
+    // Load courses and show selector
+    await loadCourses();
+    setShowCourseSelector(true);
+  };
+
+  const handlePublish = async () => {
+    console.log('🔘 Publishing to course:', selectedCourseId);
+
+    if (!generation) {
+      console.error('❌ No generation found');
+      alert('No generation data available');
+      return;
+    }
+
+    if (!selectedCourseId) {
+      alert('Please select a course');
+      return;
+    }
+
+    console.log('✅ Starting publish process...');
+    setPublishing(true);
+    setShowCourseSelector(false);
+    try {
+      console.log('📤 Sending publish request...');
       const res = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           generationId: generation.id,
-          companyId: user.companyId,
+          courseId: selectedCourseId,
         }),
       });
 
+      console.log('📥 Response status:', res.status);
       const data = await res.json();
+      console.log('📋 Response data:', data);
 
       if (data.success) {
+        console.log('✅ Publish successful!');
         // Refresh generation data
         const updatedRes = await fetch(`/api/generate/${generationId}`);
         const updatedData = await updatedRes.json();
@@ -127,13 +185,16 @@ export default function PreviewPage() {
         if (data.data.whopCourseUrl) {
           window.open(data.data.whopCourseUrl, '_blank');
         }
+        alert('Course published successfully!');
       } else {
+        console.error('❌ Publish failed:', data.error);
         alert('Failed to publish: ' + (data.error?.message || 'Unknown error'));
       }
     } catch (error) {
-      alert('Failed to publish course');
-      console.error(error);
+      console.error('❌ Publish error:', error);
+      alert('Failed to publish course: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
+      console.log('🏁 Publish process complete');
       setPublishing(false);
     }
   };
@@ -218,10 +279,10 @@ export default function PreviewPage() {
             </div>
             {generation.status === 'completed' && !generation.whopExperienceId && (
               <button
-                onClick={handlePublish}
+                onClick={handlePublishClick}
                 disabled={publishing}
-                className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm disabled:opacity-50"
-                style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
+                className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm disabled:opacity-50 cursor-pointer hover:opacity-90"
+                style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)', cursor: publishing ? 'not-allowed' : 'pointer' }}
               >
                 {publishing ? (
                   <>
@@ -232,20 +293,39 @@ export default function PreviewPage() {
                     Publishing...
                   </>
                 ) : (
-                  'Publish to Whop'
+                  'Add to Whop Course'
                 )}
               </button>
             )}
             {generation.whopExperienceId && (
-              <a
-                href={`https://whop.com/hub/${user?.companyId}/experiences/${generation.whopExperienceId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
-                style={{ color: 'var(--success-contrast)', background: 'var(--success-9)' }}
-              >
-                View in Whop →
-              </a>
+              <div className="flex items-center space-x-3">
+                <Link
+                  href={`/course/${generation.whopExperienceId}`}
+                  className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
+                  style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
+                >
+                  View Course →
+                </Link>
+                <Link
+                  href={`/edit/${generation.whopExperienceId}`}
+                  className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
+                  style={{ color: 'var(--gray-12)', background: 'var(--gray-4)', border: '1px solid var(--gray-a6)' }}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Course
+                </Link>
+                <a
+                  href={`https://whop.com/hub/${user?.companyId}/experiences/${generation.whopExperienceId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
+                  style={{ color: 'var(--gray-12)', background: 'var(--gray-3)', border: '1px solid var(--gray-a6)' }}
+                >
+                  View in Whop
+                </a>
+              </div>
             )}
           </div>
         </div>
@@ -294,7 +374,7 @@ export default function PreviewPage() {
         </div>
 
         {/* Course Structure */}
-        {generation.status === 'completed' && (
+        {(generation.status === 'completed' || generation.status === 'published') && (
           <div className="rounded-lg shadow" style={{ background: 'var(--gray-2)', border: '1px solid var(--gray-a6)' }}>
             <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--gray-a6)' }}>
               <h2 className="text-xl font-semibold" style={{ color: 'var(--gray-12)' }}>Course Structure</h2>
@@ -303,9 +383,13 @@ export default function PreviewPage() {
               {generation.modules.map((module) => (
                 <div key={module.id} className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--gray-a6)' }}>
                   <button
-                    onClick={() => toggleModule(module.id)}
-                    className="w-full px-4 py-3 flex items-center justify-between"
+                    onClick={() => {
+                      console.log('Toggling module:', module.id);
+                      toggleModule(module.id);
+                    }}
+                    className="w-full px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity cursor-pointer"
                     style={{ background: 'var(--gray-3)' }}
+                    type="button"
                   >
                     <div className="flex items-center space-x-3 text-left">
                       <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium" style={{ background: 'var(--accent-3)', color: 'var(--accent-11)' }}>
@@ -337,8 +421,12 @@ export default function PreviewPage() {
                       {module.chapters.map((chapter) => (
                         <div key={chapter.id} className="ml-4 pl-4" style={{ borderLeft: '2px solid var(--gray-a6)' }}>
                           <button
-                            onClick={() => toggleChapter(chapter.id)}
-                            className="w-full text-left flex items-center justify-between py-2"
+                            onClick={() => {
+                              console.log('Toggling chapter:', chapter.id);
+                              toggleChapter(chapter.id);
+                            }}
+                            className="w-full text-left flex items-center justify-between py-2 hover:opacity-80 transition-opacity cursor-pointer"
+                            type="button"
                           >
                             <div>
                               <h4 className="text-sm font-medium" style={{ color: 'var(--gray-12)' }}>{chapter.title}</h4>
@@ -362,8 +450,12 @@ export default function PreviewPage() {
                               {chapter.lessons.map((lesson) => (
                                 <div key={lesson.id} className="pl-3" style={{ borderLeft: '2px solid var(--gray-a4)' }}>
                                   <button
-                                    onClick={() => toggleLesson(lesson.id)}
-                                    className="w-full text-left py-2 flex items-center justify-between"
+                                    onClick={() => {
+                                      console.log('Toggling lesson:', lesson.id);
+                                      toggleLesson(lesson.id);
+                                    }}
+                                    className="w-full text-left py-2 flex items-center justify-between hover:opacity-80 transition-opacity cursor-pointer"
+                                    type="button"
                                   >
                                     <div className="flex-1">
                                       <p className="text-xs font-medium" style={{ color: 'var(--gray-12)' }}>{lesson.title}</p>
@@ -411,6 +503,84 @@ export default function PreviewPage() {
           </div>
         )}
       </main>
+
+      {/* Course Selector Modal */}
+      {showCourseSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className="max-w-lg w-full rounded-lg shadow-xl" style={{ background: 'var(--gray-2)', border: '1px solid var(--gray-a6)' }}>
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--gray-12)' }}>
+                Select a Course
+              </h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--gray-11)' }}>
+                Choose an existing course from Whop to add this content to. The generated chapters and lessons will be added to the selected course.
+              </p>
+
+              {loadingCourses ? (
+                <div className="py-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: 'var(--accent-9)' }}></div>
+                  <p className="mt-3" style={{ color: 'var(--gray-11)' }}>Loading courses...</p>
+                </div>
+              ) : courses.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p style={{ color: 'var(--gray-11)' }}>No courses found. Please create a course in the Whop Courses app first.</p>
+                  <a
+                    href={`https://whop.com/hub/${user?.companyId}/courses`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
+                    style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
+                  >
+                    Create Course in Whop →
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--gray-12)' }}>
+                      Course
+                    </label>
+                    <select
+                      value={selectedCourseId}
+                      onChange={(e) => setSelectedCourseId(e.target.value)}
+                      className="w-full px-4 py-3 rounded-md text-base"
+                      style={{
+                        background: 'var(--gray-3)',
+                        color: 'var(--gray-12)',
+                        border: '1px solid var(--gray-a6)',
+                      }}
+                    >
+                      {courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowCourseSelector(false)}
+                      className="flex-1 px-4 py-2 rounded-md text-sm font-medium"
+                      style={{ color: 'var(--gray-12)', background: 'var(--gray-4)', border: '1px solid var(--gray-a6)' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handlePublish}
+                      disabled={!selectedCourseId}
+                      className="flex-1 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                      style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
+                    >
+                      Publish to Course
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

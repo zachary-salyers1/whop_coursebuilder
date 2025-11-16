@@ -8,6 +8,13 @@
       "when": 1761407347048,
       "tag": "0000_cold_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761765268524,
+      "tag": "0001_bouncy_nitro",
+      "breakpoints": true
     }
   ]
 }

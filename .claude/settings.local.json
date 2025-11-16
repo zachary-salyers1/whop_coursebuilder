@@ -5,7 +5,9 @@
       "Bash(npx next dev:*)",
       "Bash(pnpm dev:*)",
       "Bash(pnpm remove:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

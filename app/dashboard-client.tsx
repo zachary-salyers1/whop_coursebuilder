@@ -80,27 +80,36 @@ export default function DashboardClient({ userId }: { userId: string }) {
                 Transform PDFs into engaging Whop courses in minutes
               </p>
             </div>
-            <Link
-              href="/upload"
-              className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
-              style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
-            >
-              <svg
-                className="-ml-1 mr-3 h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div className="flex items-center space-x-3">
+              <Link
+                href="/test-publish"
+                className="inline-flex items-center px-4 py-2 border-0 text-sm font-medium rounded-md"
+                style={{ color: 'var(--gray-12)', background: 'var(--gray-3)', border: '1px solid var(--gray-a6)' }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Course
-            </Link>
+                Test Publish
+              </Link>
+              <Link
+                href="/upload"
+                className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
+                style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
+              >
+                <svg
+                  className="-ml-1 mr-3 h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                New Course
+              </Link>
+            </div>
           </div>
         </div>
       </header>

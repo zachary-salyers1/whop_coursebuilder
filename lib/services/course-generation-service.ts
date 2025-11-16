@@ -352,24 +352,247 @@ export class CourseGenerationService {
 
       const structure = generation.structureJson as unknown as CourseStructure;
 
-      // Attempt to publish to Whop (currently not implemented)
-      try {
-        await WhopAPIService.publishCourse(companyId, structure);
-      } catch (error) {
-        // Expected - Whop API publishing not yet implemented
-        // Return structure for manual course creation
-        throw error;
+      // Publish to Whop
+      const result = await WhopAPIService.publishCourse(companyId, structure);
+
+      // Get or create a product for this course
+      console.log('Listing existing products...');
+      const products = await WhopAPIService.listProducts(companyId);
+
+      let productId: string;
+
+      if (products.length > 0) {
+        // Use the first existing product
+        productId = products[0].id;
+        console.log('Using existing product:', productId);
+      } else {
+        // Create a new product if none exist
+        // Product title has a 30 character limit, so truncate if necessary
+        const productTitle = structure.title.length > 30
+          ? structure.title.substring(0, 27) + '...'
+          : structure.title;
+        console.log('No existing products found. Creating product:', productTitle);
+        productId = await WhopAPIService.createProduct(
+          companyId,
+          productTitle
+        );
       }
 
-      // This won't be reached until Whop API is implemented
+      // Attach the experience to the product
+      console.log('Attaching experience to product:', { experienceId: result.experienceId, productId });
+      await WhopAPIService.attachExperienceToProduct(result.experienceId, productId);
+
+      // Update generation record with Whop IDs
+      await db
+        .update(courseGenerations)
+        .set({
+          status: 'published',
+          whopExperienceId: result.experienceId,
+          updatedAt: new Date(),
+        })
+        .where(eq(courseGenerations.id, generationId));
+
+      // Update modules, chapters, and lessons with Whop IDs
+      const modules = await db
+        .select()
+        .from(courseModules)
+        .where(eq(courseModules.generationId, generationId))
+        .orderBy(courseModules.orderIndex);
+
+      for (const mapping of result.moduleIdMappings) {
+        const module = modules[mapping.moduleIndex];
+        if (!module) continue;
+
+        // Update module with Whop course ID
+        await db
+          .update(courseModules)
+          .set({ whopCourseId: mapping.whopCourseId })
+          .where(eq(courseModules.id, module.id));
+
+        // Get chapters for this module
+        const chapters = await db
+          .select()
+          .from(courseChapters)
+          .where(eq(courseChapters.moduleId, module.id))
+          .orderBy(courseChapters.orderIndex);
+
+        for (const chapterMapping of mapping.chapterMappings) {
+          const chapter = chapters[chapterMapping.chapterIndex];
+          if (!chapter) continue;
+
+          // Update chapter with Whop chapter ID
+          await db
+            .update(courseChapters)
+            .set({ whopChapterId: chapterMapping.whopChapterId })
+            .where(eq(courseChapters.id, chapter.id));
+
+          // Get lessons for this chapter
+          const lessons = await db
+            .select()
+            .from(courseLessons)
+            .where(eq(courseLessons.chapterId, chapter.id))
+            .orderBy(courseLessons.orderIndex);
+
+          for (const lessonMapping of chapterMapping.lessonMappings) {
+            const lesson = lessons[lessonMapping.lessonIndex];
+            if (!lesson) continue;
+
+            // Update lesson with Whop lesson ID
+            await db
+              .update(courseLessons)
+              .set({ whopLessonId: lessonMapping.whopLessonId })
+              .where(eq(courseLessons.id, lesson.id));
+          }
+        }
+      }
+
+      // Log publish event
+      await db.insert(usageEvents).values({
+        userId: generation.userId,
+        generationId,
+        eventType: 'course_published',
+        metadata: {
+          experienceId: result.experienceId,
+          modulesCreated: result.modulesCreated,
+          chaptersCreated: result.chaptersCreated,
+          lessonsCreated: result.lessonsCreated,
+        },
+        createdAt: new Date(),
+      });
+
       return {
-        success: false,
-        error: 'Publishing not yet implemented',
-      } as any;
+        success: true,
+        generationId,
+        whopExperienceId: result.experienceId,
+        whopCourseUrl: result.courseUrl,
+        structure,
+        wasOverage: generation.generationType === 'overage',
+        overageCharge: generation.generationType === 'overage' ? Number(generation.overageCharge) : undefined,
+      };
     } catch (error) {
       console.error('Publish to Whop Error:', error);
       throw new Error(
         `Failed to publish course to Whop: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Add generated content to an existing Whop course
+   */
+  static async addToExistingCourse(
+    generationId: string,
+    courseId: string
+  ): Promise<CourseGenerationResult> {
+    try {
+      const generation = await this.getGeneration(generationId);
+
+      if (!generation) {
+        throw new Error('Generation not found');
+      }
+
+      if (generation.status !== 'completed') {
+        throw new Error('Generation is not completed yet');
+      }
+
+      if (!generation.structureJson) {
+        throw new Error('No course structure available');
+      }
+
+      const structure = generation.structureJson as unknown as CourseStructure;
+
+      // Add content to existing course
+      const result = await WhopAPIService.addContentToExistingCourse(courseId, structure);
+
+      // Update generation record
+      await db
+        .update(courseGenerations)
+        .set({
+          status: 'published',
+          whopExperienceId: courseId, // Store the course ID here
+          updatedAt: new Date(),
+        })
+        .where(eq(courseGenerations.id, generationId));
+
+      // Get all modules for this generation
+      const modules = await db
+        .select()
+        .from(courseModules)
+        .where(eq(courseModules.generationId, generationId))
+        .orderBy(courseModules.orderIndex);
+
+      // Track overall chapter index across all modules
+      let globalChapterIndex = 0;
+
+      // Update chapters and lessons with Whop IDs
+      for (const module of modules) {
+        // Get chapters for this module
+        const chapters = await db
+          .select()
+          .from(courseChapters)
+          .where(eq(courseChapters.moduleId, module.id))
+          .orderBy(courseChapters.orderIndex);
+
+        for (const chapter of chapters) {
+          // Find the corresponding mapping by global index
+          const chapterMapping = result.chapterMappings.find(
+            m => m.chapterIndex === globalChapterIndex
+          );
+
+          if (chapterMapping) {
+            // Update chapter with Whop ID
+            await db
+              .update(courseChapters)
+              .set({ whopChapterId: chapterMapping.whopChapterId })
+              .where(eq(courseChapters.id, chapter.id));
+
+            // Update lessons with Whop IDs
+            const lessons = await db
+              .select()
+              .from(courseLessons)
+              .where(eq(courseLessons.chapterId, chapter.id))
+              .orderBy(courseLessons.orderIndex);
+
+            for (let i = 0; i < lessons.length; i++) {
+              const lessonMapping = chapterMapping.lessonMappings.find(
+                m => m.lessonIndex === i
+              );
+
+              if (lessonMapping) {
+                await db
+                  .update(courseLessons)
+                  .set({ whopLessonId: lessonMapping.whopLessonId })
+                  .where(eq(courseLessons.id, lessons[i].id));
+              }
+            }
+          }
+
+          globalChapterIndex++;
+        }
+      }
+
+      // Log usage event
+      await db.insert(usageEvents).values({
+        userId: generation.userId,
+        generationId: generation.id,
+        eventType: 'course_published',
+        metadata: { courseId },
+        createdAt: new Date(),
+      });
+
+      return {
+        success: true,
+        generationId,
+        whopExperienceId: courseId,
+        whopCourseUrl: `https://whop.com/courses/${courseId}`,
+        structure,
+        wasOverage: generation.generationType === 'overage',
+        overageCharge: generation.generationType === 'overage' ? Number(generation.overageCharge) : undefined,
+      };
+    } catch (error) {
+      console.error('Add to Existing Course Error:', error);
+      throw new Error(
+        `Failed to add content to course: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

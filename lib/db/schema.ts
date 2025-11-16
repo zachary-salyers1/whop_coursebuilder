@@ -149,6 +149,19 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Lesson Progress Table
+export const lessonProgress = pgTable('lesson_progress', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  whopLessonId: varchar('whop_lesson_id', { length: 255 }).notNull(),
+  whopExperienceId: varchar('whop_experience_id', { length: 255 }).notNull(),
+  completed: boolean('completed').default(false).notNull(),
+  completedAt: timestamp('completed_at'),
+  lastAccessedAt: timestamp('last_accessed_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   subscriptions: many(subscriptions),
@@ -156,6 +169,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   pdfUploads: many(pdfUploads),
   usageEvents: many(usageEvents),
   overageCharges: many(overageCharges),
+  lessonProgress: many(lessonProgress),
+}));
+
+export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [lessonProgress.userId],
+    references: [users.id],
+  }),
 }));
 
 export const subscriptionsRelations = relations(subscriptions, ({ one, many }) => ({

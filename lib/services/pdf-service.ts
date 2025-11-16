@@ -1,18 +1,62 @@
-import { PDFParse } from 'pdf-parse';
 import { put } from '@vercel/blob';
 import { db } from '../db/client';
 import { pdfUploads } from '../db/schema';
 import type { NewPdfUpload } from '../types/database';
-import path from 'path';
-import { pathToFileURL } from 'url';
 import { eq } from 'drizzle-orm';
 
-// Configure PDF.js worker for Node.js environment
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-  const workerPath = path.join(process.cwd(), 'node_modules', 'pdf-parse', 'dist', 'pdf-parse', 'cjs', 'pdf.worker.mjs');
-  // Convert Windows path to proper file:// URL
-  const workerUrl = pathToFileURL(workerPath).href;
-  PDFParse.setWorker(workerUrl);
+// Setup canvas polyfills and worker for PDF.js in Node.js environment
+let pdfParseInitialized = false;
+
+async function initializePdfParse() {
+  if (pdfParseInitialized) return;
+
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      // Import and setup canvas polyfills (optional for text extraction)
+      const { ImageData, DOMMatrix, Path2D } = await import('@napi-rs/canvas');
+
+      // Polyfill global objects for PDF.js
+      if (typeof globalThis.DOMMatrix === 'undefined') {
+        globalThis.DOMMatrix = DOMMatrix as any;
+      }
+      if (typeof globalThis.ImageData === 'undefined') {
+        globalThis.ImageData = ImageData as any;
+      }
+      if (typeof globalThis.Path2D === 'undefined') {
+        globalThis.Path2D = Path2D as any;
+      }
+
+      console.log('✅ Canvas polyfills initialized for PDF.js');
+    } catch (error) {
+      console.warn('⚠️  Could not load @napi-rs/canvas, PDF rendering may be limited:', error);
+    }
+
+    // Configure worker for Node.js/Next.js environment
+    try {
+      const { PDFParse } = await import('pdf-parse');
+      const path = await import('path');
+      const { pathToFileURL } = await import('url');
+
+      // Set worker to the installed pdf-parse worker file (.mjs for Node.js)
+      const workerPath = path.join(
+        process.cwd(),
+        'node_modules',
+        'pdf-parse',
+        'dist',
+        'worker',
+        'pdf.worker.mjs'
+      );
+
+      const workerUrl = pathToFileURL(workerPath).href;
+      PDFParse.setWorker(workerUrl);
+
+      console.log('✅ PDF worker configured:', workerUrl);
+    } catch (error) {
+      console.warn('⚠️  Could not configure PDF worker, will use default:', error);
+    }
+  }
+
+  pdfParseInitialized = true;
 }
 
 export class PDFService {
@@ -59,8 +103,16 @@ export class PDFService {
     pageCount: number;
   }> {
     try {
+      // Initialize polyfills before using pdf-parse
+      await initializePdfParse();
+
+      // Lazy load pdf-parse
+      const { PDFParse } = await import('pdf-parse');
       const parser = new PDFParse({ data: buffer });
       const result = await parser.getText();
+
+      // Always call destroy() to free memory
+      await parser.destroy();
 
       return {
         text: result.text,
@@ -82,8 +134,16 @@ export class PDFService {
     pageCount: number;
   }> {
     try {
+      // Initialize polyfills before using pdf-parse
+      await initializePdfParse();
+
+      // Lazy load pdf-parse - v2 API can fetch URLs directly
+      const { PDFParse } = await import('pdf-parse');
       const parser = new PDFParse({ url });
       const result = await parser.getText();
+
+      // Always call destroy() to free memory
+      await parser.destroy();
 
       return {
         text: result.text,

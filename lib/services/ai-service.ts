@@ -164,6 +164,7 @@ Generate a comprehensive course structure following the guidelines. Return ONLY 
       const analysis = JSON.parse(content);
 
       // Transform to match expected PDFAnalysisResponse format
+      // Keep the full structure for content generation
       return {
         suggestedTitle: analysis.courseTitle,
         suggestedDescription: analysis.courseDescription,
@@ -177,6 +178,8 @@ Generate a comprehensive course structure following the guidelines. Return ONLY 
             description: mod.description,
             topics: mod.chapters.map((ch: any) => ch.title),
           })),
+          // Preserve the full structure for content generation
+          fullStructure: analysis,
         },
       } as PDFAnalysisResponse;
     } catch (error) {
@@ -197,13 +200,34 @@ Generate a comprehensive course structure following the guidelines. Return ONLY 
       const tone = request.tone || 'professional';
 
       // Use the detailed structure from analysis
-      const fullStructure = (request.structure as any).fullStructure || request.structure;
+      // request.structure is PDFAnalysisResponse, so we need to access structure.structure.fullStructure
+      console.log('=== STRUCTURE DEBUG ===');
+      console.log('request.structure type:', typeof request.structure);
+      console.log('request.structure keys:', Object.keys(request.structure || {}));
+      console.log('Has structure.structure?', !!(request.structure as any).structure);
+      console.log('Has structure.structure.fullStructure?', !!(request.structure as any).structure?.fullStructure);
+
+      const fullStructure = (request.structure as any).structure?.fullStructure || (request.structure as any).fullStructure || request.structure;
+
+      console.log('fullStructure type:', typeof fullStructure);
+      console.log('fullStructure keys:', Object.keys(fullStructure || {}));
+      console.log('fullStructure.modules exists?', !!fullStructure?.modules);
+      console.log('fullStructure.modules is array?', Array.isArray(fullStructure?.modules));
+
+      // Validate that we have the full structure
+      if (!fullStructure || !fullStructure.modules || !Array.isArray(fullStructure.modules)) {
+        console.error('VALIDATION FAILED - fullStructure:', JSON.stringify(fullStructure, null, 2));
+        throw new Error('Invalid course structure: modules array is required');
+      }
 
       // Collect all lessons for batch generation
       const allLessons: any[] = [];
       let lessonIndex = 0;
 
-      fullStructure.modules?.forEach((module: any, modIdx: number) => {
+      fullStructure.modules.forEach((module: any, modIdx: number) => {
+        if (!module.chapters || !Array.isArray(module.chapters)) {
+          throw new Error(`Invalid module structure at index ${modIdx}: chapters array is required`);
+        }
         module.chapters?.forEach((chapter: any, chapIdx: number) => {
           chapter.lessons?.forEach((lesson: any, lessIdx: number) => {
             allLessons.push({
