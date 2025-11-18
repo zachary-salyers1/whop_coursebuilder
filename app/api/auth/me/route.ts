@@ -8,10 +8,26 @@ export async function GET(request: NextRequest) {
     // Try to get user from Whop token
     const tokenResult = await whopSdk.verifyUserToken(headers);
 
-    // Get company ID from header or environment
+    // Try to get company ID from various sources
     let companyId = headers.get('x-whop-company-id') || headers.get('whop-company-id');
 
-    // Fallback to environment variable in development
+    // If no company ID in headers, try to get it from the referrer URL
+    if (!companyId) {
+      const referer = headers.get('referer');
+      if (referer) {
+        // Extract company slug from URL like: whop.com/joined/{company-slug}/...
+        const match = referer.match(/whop\.com\/joined\/([^\/]+)/);
+        if (match) {
+          const companySlug = match[1];
+          console.log('📍 Extracted company slug from referer:', companySlug);
+
+          // TODO: We have the slug but need the ID. For now, store slug as metadata
+          // The slug-to-ID mapping should be handled by querying user memberships
+        }
+      }
+    }
+
+    // Fallback to environment variable only in development mode
     if (!companyId && process.env.NODE_ENV === 'development') {
       companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID || 'biz_1Io4EO2Twj9wo7';
     }
@@ -19,10 +35,12 @@ export async function GET(request: NextRequest) {
     // Check for experience ID in headers
     const experienceId = headers.get('x-whop-experience-id') || headers.get('whop-experience-id');
 
-    console.log('Auth headers:', {
+    console.log('🔍 Auth debug:', {
       companyId,
       experienceId,
-      allHeaders: Object.fromEntries(headers.entries())
+      userId: tokenResult.userId,
+      referer: headers.get('referer'),
+      nodeEnv: process.env.NODE_ENV,
     });
 
     return NextResponse.json({
