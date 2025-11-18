@@ -61,30 +61,33 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       try {
-        console.log('🔍 Fetching current user data via SDK');
+        console.log('🔍 Fetching user memberships via REST API');
 
-        // Use Whop SDK to get current user data (includes valid_memberships)
-        // This requires the user context to be set
-        const userSdk = whopSdk.withUser(tokenResult.userId);
-        const userData = await userSdk.sdk.getCurrentUser();
+        // Use Whop REST API to get user's memberships
+        const membershipsResponse = await fetch(`https://api.whop.com/api/v5/memberships?valid=true&user_id=${tokenResult.userId}`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+          },
+        });
 
-        console.log('📊 Got user data from SDK');
-
-        if (userData) {
-          console.log('📊 User valid_memberships count:', userData.valid_memberships?.length || 0);
+        if (membershipsResponse.ok) {
+          const membershipsData = await membershipsResponse.json();
+          console.log('📊 Memberships API response:', JSON.stringify(membershipsData).substring(0, 500));
 
           // Check if user has valid memberships with company info
-          if (userData.valid_memberships && userData.valid_memberships.length > 0) {
+          if (membershipsData.data && membershipsData.data.length > 0) {
             // Get company ID from the first valid membership
-            const membership = userData.valid_memberships[0];
-            companyId = membership.company_id;
-            console.log('✅ Got company ID from user membership:', companyId, `(${userData.valid_memberships.length} total memberships)`);
+            const membership = membershipsData.data[0];
+            companyId = membership.company_id || membership.plan?.company_id;
+            console.log('✅ Got company ID from user membership:', companyId, `(${membershipsData.data.length} total memberships)`);
           } else {
             console.log('⚠️  No valid memberships found for user');
           }
+        } else {
+          console.error('❌ Memberships API error:', membershipsResponse.status, await membershipsResponse.text());
         }
       } catch (error) {
-        console.error('❌ Failed to fetch user data:', error);
+        console.error('❌ Failed to fetch user memberships:', error);
       }
     }
 
