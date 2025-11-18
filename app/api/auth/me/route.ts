@@ -61,34 +61,31 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       try {
-        console.log('🔍 Fetching user data for:', tokenResult.userId);
-        const userResponse = await fetch(
-          `https://api.whop.com/api/v5/users/${tokenResult.userId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-            },
+        console.log('🔍 Fetching user data via SDK for:', tokenResult.userId);
+
+        // Use Whop SDK to get user data (includes valid_memberships)
+        const userData = await whopSdk.GET('/users/{id}', {
+          params: {
+            path: { id: tokenResult.userId }
           }
-        );
+        });
 
-        console.log('📊 User API response status:', userResponse.status);
+        console.log('📊 SDK User response:', userData.response.status);
 
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          console.log('📊 User data:', JSON.stringify(userData, null, 2));
+        if (userData.data) {
+          console.log('📊 User data:', JSON.stringify(userData.data, null, 2));
 
           // Check if user has valid memberships with company info
-          if (userData.valid_memberships && userData.valid_memberships.length > 0) {
+          if (userData.data.valid_memberships && userData.data.valid_memberships.length > 0) {
             // Get company ID from the first valid membership
-            const membership = userData.valid_memberships[0];
+            const membership = userData.data.valid_memberships[0];
             companyId = membership.company_id;
-            console.log('✅ Got company ID from user membership:', companyId, `(${userData.valid_memberships.length} total memberships)`);
+            console.log('✅ Got company ID from user membership:', companyId, `(${userData.data.valid_memberships.length} total memberships)`);
           } else {
             console.log('⚠️  No valid memberships found for user');
           }
-        } else {
-          const errorText = await userResponse.text();
-          console.error('❌ User API error:', userResponse.status, errorText);
+        } else if (userData.error) {
+          console.error('❌ SDK User error:', userData.error);
         }
       } catch (error) {
         console.error('❌ Failed to fetch user data:', error);
