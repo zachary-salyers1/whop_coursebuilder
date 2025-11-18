@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Last resort: Query user's memberships to find which companies they have access to
     // This is needed when accessing the app dashboard directly (not via experience)
-    if (!companyId && process.env.NODE_ENV !== 'development') {
+    if (!companyId) {
       try {
         console.log('🔍 Fetching user memberships for user:', tokenResult.userId);
         const membershipsResponse = await fetch(
@@ -69,15 +69,23 @@ export async function GET(request: NextRequest) {
           }
         );
 
+        console.log('📊 Memberships response status:', membershipsResponse.status);
+
         if (membershipsResponse.ok) {
           const memberships = await membershipsResponse.json();
+          console.log('📊 Memberships data:', JSON.stringify(memberships, null, 2));
 
           // Get the first valid membership's company ID
           // TODO: In the future, we might need to handle users with multiple memberships
           if (memberships.data && memberships.data.length > 0) {
             companyId = memberships.data[0].company_id;
             console.log('✅ Got company ID from membership:', companyId, `(${memberships.data.length} total memberships)`);
+          } else {
+            console.log('⚠️  No memberships found for user');
           }
+        } else {
+          const errorText = await membershipsResponse.text();
+          console.error('❌ Memberships API error:', membershipsResponse.status, errorText);
         }
       } catch (error) {
         console.error('❌ Failed to fetch user memberships:', error);
