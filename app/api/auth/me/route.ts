@@ -35,6 +35,26 @@ export async function GET(request: NextRequest) {
     // Check for experience ID in headers
     const experienceId = headers.get('x-whop-experience-id') || headers.get('whop-experience-id');
 
+    // If we have experience ID but no company ID, fetch company from experience
+    if (experienceId && !companyId) {
+      try {
+        console.log('🔍 Fetching company ID from experience:', experienceId);
+        const expResponse = await fetch(`https://api.whop.com/api/v5/app/experiences/${experienceId}`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+          },
+        });
+
+        if (expResponse.ok) {
+          const expData = await expResponse.json();
+          companyId = expData.company_id;
+          console.log('✅ Got company ID from experience:', companyId);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch company from experience:', error);
+      }
+    }
+
     console.log('🔍 Auth debug:', {
       companyId,
       experienceId,
