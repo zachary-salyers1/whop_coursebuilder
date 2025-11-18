@@ -4,13 +4,27 @@ import { pdfUploads } from '../db/schema';
 import type { NewPdfUpload } from '../types/database';
 import { eq } from 'drizzle-orm';
 
-// Setup worker for PDF.js in Node.js environment
+// Setup worker and polyfills for PDF.js in Node.js environment
 let pdfParseInitialized = false;
 
 async function initializePdfParse() {
   if (pdfParseInitialized) return;
 
   if (typeof process !== 'undefined' && process.versions?.node) {
+    // Add minimal polyfills for PDF.js (required even for text extraction)
+    if (typeof globalThis.DOMMatrix === 'undefined') {
+      // Minimal DOMMatrix stub - PDF.js needs this even for text extraction
+      globalThis.DOMMatrix = class DOMMatrix {
+        constructor(init?: any) {
+          this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
+          if (Array.isArray(init) && init.length === 6) {
+            [this.a, this.b, this.c, this.d, this.e, this.f] = init;
+          }
+        }
+        a: number; b: number; c: number; d: number; e: number; f: number;
+      } as any;
+    }
+
     // Configure worker for Node.js/Next.js environment
     try {
       const { PDFParse } = await import('pdf-parse');
