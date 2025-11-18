@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       try {
-        console.log('🔍 Fetching user memberships for user:', tokenResult.userId);
-        const membershipsResponse = await fetch(
-          `https://api.whop.com/api/v5/memberships?user_id=${tokenResult.userId}&valid=true`,
+        console.log('🔍 Fetching user data for:', tokenResult.userId);
+        const userResponse = await fetch(
+          `https://api.whop.com/api/v5/users/${tokenResult.userId}`,
           {
             headers: {
               'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
@@ -71,26 +71,27 @@ export async function GET(request: NextRequest) {
           }
         );
 
-        console.log('📊 Memberships response status:', membershipsResponse.status);
+        console.log('📊 User API response status:', userResponse.status);
 
-        if (membershipsResponse.ok) {
-          const memberships = await membershipsResponse.json();
-          console.log('📊 Memberships data:', JSON.stringify(memberships, null, 2));
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          console.log('📊 User data:', JSON.stringify(userData, null, 2));
 
-          // Get the first valid membership's company ID
-          // TODO: In the future, we might need to handle users with multiple memberships
-          if (memberships.data && memberships.data.length > 0) {
-            companyId = memberships.data[0].company_id;
-            console.log('✅ Got company ID from membership:', companyId, `(${memberships.data.length} total memberships)`);
+          // Check if user has valid memberships with company info
+          if (userData.valid_memberships && userData.valid_memberships.length > 0) {
+            // Get company ID from the first valid membership
+            const membership = userData.valid_memberships[0];
+            companyId = membership.company_id;
+            console.log('✅ Got company ID from user membership:', companyId, `(${userData.valid_memberships.length} total memberships)`);
           } else {
-            console.log('⚠️  No memberships found for user');
+            console.log('⚠️  No valid memberships found for user');
           }
         } else {
-          const errorText = await membershipsResponse.text();
-          console.error('❌ Memberships API error:', membershipsResponse.status, errorText);
+          const errorText = await userResponse.text();
+          console.error('❌ User API error:', userResponse.status, errorText);
         }
       } catch (error) {
-        console.error('❌ Failed to fetch user memberships:', error);
+        console.error('❌ Failed to fetch user data:', error);
       }
     }
 
