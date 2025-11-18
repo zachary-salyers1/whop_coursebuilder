@@ -20,17 +20,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user
-    const user = await UserService.getUserByWhopId(whopUserId);
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: 'user_not_found', message: 'User not found' },
-        },
-        { status: 404 }
-      );
-    }
+    // Get company ID from query params (preferred) or headers (fallback)
+    const companyId = searchParams.get('companyId') ||
+                      request.headers.get('x-whop-company-id') ||
+                      request.headers.get('whop-company-id');
+
+    // Get or create user (with companyId for multi-tenant support)
+    const user = await UserService.getOrCreateUser({
+      id: whopUserId,
+      companyId: companyId || undefined,
+    });
 
     // Get generations with module and lesson counts
     const generations = await db

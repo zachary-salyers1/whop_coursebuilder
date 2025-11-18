@@ -37,13 +37,27 @@ export default function DashboardClient({ userId }: { userId: string }) {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
+  // First get auth info including companyId
   useEffect(() => {
-    if (!userId) return;
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data.companyId) {
+          setCompanyId(data.data.companyId);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Then fetch usage and generations with companyId
+  useEffect(() => {
+    if (!userId || !companyId) return;
 
     Promise.all([
-      fetch(`/api/usage?userId=${userId}`).then((r) => r.json()),
-      fetch(`/api/generations?userId=${userId}&limit=10`).then((r) => r.json()),
+      fetch(`/api/usage?userId=${userId}&companyId=${companyId}`).then((r) => r.json()),
+      fetch(`/api/generations?userId=${userId}&companyId=${companyId}&limit=10`).then((r) => r.json()),
     ])
       .then(([usageRes, generationsRes]) => {
         if (usageRes.success) setUsage(usageRes.data);
@@ -51,7 +65,7 @@ export default function DashboardClient({ userId }: { userId: string }) {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, companyId]);
 
   if (loading) {
     return (
