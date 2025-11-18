@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
 
     // Last resort: Query user's memberships to find which companies they have access to
     // This is needed when accessing the app dashboard directly (not via experience)
+    console.log('🔍 About to check membership query. companyId:', companyId, 'experienceId:', experienceId);
+
     if (!companyId) {
       try {
         console.log('🔍 Fetching user memberships for user:', tokenResult.userId);
