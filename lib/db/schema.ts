@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, text, integer, decimal, boolean, jsonb, pgEnum } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // Enums
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled', 'expired']);
@@ -20,14 +20,17 @@ export const overageStatusEnum = pgEnum('overage_status', ['pending', 'charged',
 // Users Table
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  whopUserId: varchar('whop_user_id', { length: 255 }).unique().notNull(),
+  whopUserId: varchar('whop_user_id', { length: 255 }).notNull(),
   whopCompanyId: varchar('whop_company_id', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }),
   username: varchar('username', { length: 255 }),
   companyName: varchar('company_name', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  // Composite unique constraint: each user can have one record per company
+  uniqueUserCompany: sql`UNIQUE (whop_user_id, whop_company_id)`,
+}));
 
 // Subscriptions Table
 export const subscriptions = pgTable('subscriptions', {

@@ -4,33 +4,13 @@ import { pdfUploads } from '../db/schema';
 import type { NewPdfUpload } from '../types/database';
 import { eq } from 'drizzle-orm';
 
-// Setup canvas polyfills and worker for PDF.js in Node.js environment
+// Setup worker for PDF.js in Node.js environment
 let pdfParseInitialized = false;
 
 async function initializePdfParse() {
   if (pdfParseInitialized) return;
 
   if (typeof process !== 'undefined' && process.versions?.node) {
-    try {
-      // Import and setup canvas polyfills (optional for text extraction)
-      const { ImageData, DOMMatrix, Path2D } = await import('@napi-rs/canvas');
-
-      // Polyfill global objects for PDF.js
-      if (typeof globalThis.DOMMatrix === 'undefined') {
-        globalThis.DOMMatrix = DOMMatrix as any;
-      }
-      if (typeof globalThis.ImageData === 'undefined') {
-        globalThis.ImageData = ImageData as any;
-      }
-      if (typeof globalThis.Path2D === 'undefined') {
-        globalThis.Path2D = Path2D as any;
-      }
-
-      console.log('✅ Canvas polyfills initialized for PDF.js');
-    } catch (error) {
-      console.warn('⚠️  Could not load @napi-rs/canvas, PDF rendering may be limited:', error);
-    }
-
     // Configure worker for Node.js/Next.js environment
     try {
       const { PDFParse } = await import('pdf-parse');

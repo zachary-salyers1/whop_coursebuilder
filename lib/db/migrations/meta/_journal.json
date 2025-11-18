@@ -15,6 +15,13 @@
       "when": 1761765268524,
       "tag": "0001_bouncy_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763480329030,
+      "tag": "0002_aspiring_loki",
+      "breakpoints": true
     }
   ]
 }

@@ -14,7 +14,6 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
-		"@napi-rs/canvas": "^0.1.81",
 		"@vercel/blob": "^2.0.0",
 		"@vercel/functions": "^2.0.3",
 		"@whop/api": "^0.0.29",

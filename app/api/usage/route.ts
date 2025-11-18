@@ -17,9 +17,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get company ID from headers
+    const companyId = request.headers.get('x-whop-company-id') || request.headers.get('whop-company-id');
+
     // Get or create user
     const user = await UserService.getOrCreateUser({
       id: whopUserId,
+      companyId: companyId || undefined,
     });
 
     // Get usage summary

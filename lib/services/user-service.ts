@@ -1,6 +1,6 @@
 import { db } from '../db/client';
 import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { User, NewUser } from '../types/database';
 
 export class UserService {
@@ -9,14 +9,20 @@ export class UserService {
    */
   static async getOrCreateUser(whopUserData: {
     id: string;
+    companyId?: string;
     email?: string;
     username?: string;
   }): Promise<User> {
-    // Try to find existing user
+    const companyId = whopUserData.companyId || process.env.NEXT_PUBLIC_WHOP_COMPANY_ID!;
+
+    // Try to find existing user by BOTH whopUserId AND whopCompanyId
     const [existingUser] = await db
       .select()
       .from(users)
-      .where(eq(users.whopUserId, whopUserData.id))
+      .where(and(
+        eq(users.whopUserId, whopUserData.id),
+        eq(users.whopCompanyId, companyId)
+      ))
       .limit(1);
 
     if (existingUser) {
@@ -41,10 +47,10 @@ export class UserService {
       return existingUser;
     }
 
-    // Create new user
+    // Create new user (unique per whopUserId + whopCompanyId combination)
     const newUser: NewUser = {
       whopUserId: whopUserData.id,
-      whopCompanyId: process.env.NEXT_PUBLIC_WHOP_COMPANY_ID!,
+      whopCompanyId: companyId,
       email: whopUserData.email,
       username: whopUserData.username,
       createdAt: new Date(),
