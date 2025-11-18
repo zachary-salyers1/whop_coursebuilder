@@ -55,6 +55,35 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Last resort: Query user's memberships to find which companies they have access to
+    // This is needed when accessing the app dashboard directly (not via experience)
+    if (!companyId && process.env.NODE_ENV !== 'development') {
+      try {
+        console.log('🔍 Fetching user memberships for user:', tokenResult.userId);
+        const membershipsResponse = await fetch(
+          `https://api.whop.com/api/v5/memberships?user_id=${tokenResult.userId}&valid=true`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+            },
+          }
+        );
+
+        if (membershipsResponse.ok) {
+          const memberships = await membershipsResponse.json();
+
+          // Get the first valid membership's company ID
+          // TODO: In the future, we might need to handle users with multiple memberships
+          if (memberships.data && memberships.data.length > 0) {
+            companyId = memberships.data[0].company_id;
+            console.log('✅ Got company ID from membership:', companyId, `(${memberships.data.length} total memberships)`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch user memberships:', error);
+      }
+    }
+
     console.log('🔍 Auth debug:', {
       companyId,
       experienceId,
