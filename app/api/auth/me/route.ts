@@ -61,31 +61,27 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       try {
-        console.log('🔍 Fetching user data via SDK for:', tokenResult.userId);
+        console.log('🔍 Fetching current user data via SDK');
 
-        // Use Whop SDK to get user data (includes valid_memberships)
-        const userData = await whopSdk.GET('/users/{id}', {
-          params: {
-            path: { id: tokenResult.userId }
-          }
-        });
+        // Use Whop SDK to get current user data (includes valid_memberships)
+        // This requires the user context to be set
+        const userSdk = whopSdk.withUser(tokenResult.userId);
+        const userData = await userSdk.sdk.getCurrentUser();
 
-        console.log('📊 SDK User response:', userData.response.status);
+        console.log('📊 Got user data from SDK');
 
-        if (userData.data) {
-          console.log('📊 User data:', JSON.stringify(userData.data, null, 2));
+        if (userData) {
+          console.log('📊 User valid_memberships count:', userData.valid_memberships?.length || 0);
 
           // Check if user has valid memberships with company info
-          if (userData.data.valid_memberships && userData.data.valid_memberships.length > 0) {
+          if (userData.valid_memberships && userData.valid_memberships.length > 0) {
             // Get company ID from the first valid membership
-            const membership = userData.data.valid_memberships[0];
+            const membership = userData.valid_memberships[0];
             companyId = membership.company_id;
-            console.log('✅ Got company ID from user membership:', companyId, `(${userData.data.valid_memberships.length} total memberships)`);
+            console.log('✅ Got company ID from user membership:', companyId, `(${userData.valid_memberships.length} total memberships)`);
           } else {
             console.log('⚠️  No valid memberships found for user');
           }
-        } else if (userData.error) {
-          console.error('❌ SDK User error:', userData.error);
         }
       } catch (error) {
         console.error('❌ Failed to fetch user data:', error);
