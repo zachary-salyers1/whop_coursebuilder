@@ -17,7 +17,16 @@ export async function GET(
       );
     }
 
-    console.log('Fetching experience:', experienceId);
+    console.log('Fetching experience/course:', experienceId);
+
+    // Check if this is a course ID (cors_...) or experience ID (exp_...)
+    const isCourseId = experienceId.startsWith('cors_');
+
+    if (isCourseId) {
+      // Handle course ID directly - fetch the course and return it
+      console.log('Detected course ID, fetching course directly');
+      return await handleCourseId(experienceId);
+    }
 
     // Fetch experience details from Whop
     const experienceResponse = await fetch(
@@ -158,6 +167,97 @@ export async function GET(
         success: false,
         error: {
           message: error instanceof Error ? error.message : 'Failed to fetch experience',
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle course ID directly (for courses created in Whop's native Courses app)
+async function handleCourseId(courseId: string) {
+  try {
+    // Fetch course details
+    const courseResponse = await fetch(
+      `https://api.whop.com/api/v1/courses/${courseId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!courseResponse.ok) {
+      const error = await courseResponse.text();
+      console.error('Failed to fetch course:', courseResponse.status, error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: 'Course not found' },
+        },
+        { status: 404 }
+      );
+    }
+
+    const courseData = await courseResponse.json();
+    console.log('Course data:', courseData);
+
+    // Fetch full lesson content for each lesson
+    const chaptersWithLessons = await Promise.all(
+      (courseData.chapters || []).map(async (chapter: any) => {
+        const lessonsWithContent = await Promise.all(
+          (chapter.lessons || []).map(async (lesson: any) => {
+            try {
+              const lessonResponse = await fetch(
+                `https://api.whop.com/api/v1/course_lessons/${lesson.id}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+
+              if (lessonResponse.ok) {
+                return await lessonResponse.json();
+              }
+              return lesson;
+            } catch (err) {
+              console.error('Error fetching lesson:', err);
+              return lesson;
+            }
+          })
+        );
+
+        return {
+          ...chapter,
+          lessons: lessonsWithContent,
+        };
+      })
+    );
+
+    const courseWithLessons = {
+      ...courseData,
+      chapters: chaptersWithLessons,
+    };
+
+    // Return in the same format as experience-based courses
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: courseId,
+        name: courseData.title,
+        courses: [courseWithLessons],
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching course:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to fetch course',
         },
       },
       { status: 500 }

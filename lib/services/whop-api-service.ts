@@ -21,6 +21,35 @@ interface WhopLesson {
 
 export class WhopAPIService {
   /**
+   * Get course details by ID
+   */
+  static async getCourse(courseId: string): Promise<any> {
+    try {
+      console.log('Fetching course:', courseId);
+
+      const response = await fetch(`https://api.whop.com/api/v1/courses/${courseId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Get course failed:', response.status, error);
+        throw new Error(`Failed to get course: ${response.status} ${error}`);
+      }
+
+      const data = await response.json();
+      console.log('Course retrieved:', data);
+      return data;
+    } catch (error) {
+      console.error('Get Course Error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * List all courses for a company
    */
   static async listCourses(companyId: string): Promise<any[]> {
@@ -512,6 +541,33 @@ export class WhopAPIService {
       return data;
     } catch (error) {
       console.error('Update Chapter Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a chapter
+   */
+  static async deleteChapter(chapterId: string): Promise<void> {
+    try {
+      console.log('Deleting chapter:', chapterId);
+
+      const response = await fetch(`https://api.whop.com/api/v1/course_chapters/${chapterId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Chapter deletion failed:', response.status, error);
+        throw new Error(`Failed to delete chapter: ${response.status} ${error}`);
+      }
+
+      console.log('Chapter deleted successfully');
+    } catch (error) {
+      console.error('Delete Chapter Error:', error);
       throw error;
     }
   }

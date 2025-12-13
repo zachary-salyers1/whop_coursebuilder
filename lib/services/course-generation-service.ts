@@ -501,15 +501,20 @@ export class CourseGenerationService {
 
       const structure = generation.structureJson as unknown as CourseStructure;
 
+      // Get course details to find the experience ID
+      const courseDetails = await WhopAPIService.getCourse(courseId);
+      const experienceId = courseDetails.experience_id || courseId;
+      console.log('Course details:', { courseId, experienceId, hasExperience: !!courseDetails.experience_id });
+
       // Add content to existing course
       const result = await WhopAPIService.addContentToExistingCourse(courseId, structure);
 
-      // Update generation record
+      // Update generation record with the experience ID (or course ID as fallback)
       await db
         .update(courseGenerations)
         .set({
           status: 'published',
-          whopExperienceId: courseId, // Store the course ID here
+          whopExperienceId: experienceId,
           updatedAt: new Date(),
         })
         .where(eq(courseGenerations.id, generationId));
@@ -576,14 +581,14 @@ export class CourseGenerationService {
         userId: generation.userId,
         generationId: generation.id,
         eventType: 'course_published',
-        metadata: { courseId },
+        metadata: { courseId, experienceId },
         createdAt: new Date(),
       });
 
       return {
         success: true,
         generationId,
-        whopExperienceId: courseId,
+        whopExperienceId: experienceId,
         whopCourseUrl: `https://whop.com/courses/${courseId}`,
         structure,
         wasOverage: generation.generationType === 'overage',
