@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     if (experienceId && !companyId) {
       try {
         console.log('🔍 Fetching company ID from experience:', experienceId);
-        const expResponse = await fetch(`https://api.whop.com/api/v5/app/experiences/${experienceId}`, {
+        const expResponse = await fetch(`https://api.whop.com/api/v1/experiences/${experienceId}`, {
           headers: {
             'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
           },
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         console.log('🔍 Fetching user memberships via REST API');
 
         // Use Whop REST API to get user's memberships
-        const membershipsResponse = await fetch(`https://api.whop.com/api/v5/memberships?valid=true&user_id=${tokenResult.userId}`, {
+        const membershipsResponse = await fetch(`https://api.whop.com/api/v1/memberships?user_id=${tokenResult.userId}&valid=true`, {
           headers: {
             'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
           },
