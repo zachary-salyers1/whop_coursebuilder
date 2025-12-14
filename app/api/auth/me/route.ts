@@ -55,39 +55,41 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Last resort: Query user's memberships to find which companies they have access to
+    // Last resort: Query user's companies using SDK
     // This is needed when accessing the app dashboard directly (not via experience)
     console.log('🔍 About to check membership query. companyId:', companyId, 'experienceId:', experienceId);
 
     if (!companyId) {
       try {
-        console.log('🔍 Fetching user memberships via REST API');
+        console.log('🔍 Fetching user companies via Whop SDK');
 
-        // Use Whop REST API to get user's memberships
-        const membershipsResponse = await fetch(`https://api.whop.com/api/v1/memberships?user_id=${tokenResult.userId}&valid=true`, {
-          headers: {
-            'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-          },
-        });
+        // Use Whop SDK to get companies the user has access to
+        const userSdk = whopSdk.withUser(tokenResult.userId);
+        const companiesResponse = await userSdk.companies.listCompanies({});
 
-        if (membershipsResponse.ok) {
-          const membershipsData = await membershipsResponse.json();
-          console.log('📊 Memberships API response:', JSON.stringify(membershipsData).substring(0, 500));
+        console.log('📊 Companies SDK response:', JSON.stringify(companiesResponse).substring(0, 500));
 
-          // Check if user has valid memberships with company info
-          if (membershipsData.data && membershipsData.data.length > 0) {
-            // Get company ID from the first valid membership
-            const membership = membershipsData.data[0];
-            companyId = membership.company_id || membership.plan?.company_id;
-            console.log('✅ Got company ID from user membership:', companyId, `(${membershipsData.data.length} total memberships)`);
-          } else {
-            console.log('⚠️  No valid memberships found for user');
-          }
+        // Get company ID from the first company
+        if (companiesResponse.data && companiesResponse.data.length > 0) {
+          companyId = companiesResponse.data[0].id;
+          console.log('✅ Got company ID from SDK:', companyId, `(${companiesResponse.data.length} total companies)`);
         } else {
-          console.error('❌ Memberships API error:', membershipsResponse.status, await membershipsResponse.text());
+          console.log('⚠️  No companies found for user');
+
+          // Fallback: use the app's default company from env
+          if (process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
+            companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
+            console.log('📍 Using fallback company ID from env:', companyId);
+          }
         }
       } catch (error) {
-        console.error('❌ Failed to fetch user memberships:', error);
+        console.error('❌ Failed to fetch user companies:', error);
+
+        // Fallback: use the app's default company from env
+        if (process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
+          companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
+          console.log('📍 Using fallback company ID from env after error:', companyId);
+        }
       }
     }
 
