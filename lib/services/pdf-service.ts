@@ -3,8 +3,9 @@ import { db } from '../db/client';
 import { pdfUploads } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
-// pdf-parse v1 is a simple function - serverless compatible
-import pdfParse from 'pdf-parse';
+// pdf-parse v1 - import from lib to avoid test file loading issue
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse/lib/pdf-parse');
 
 export class PDFService {
   /**
