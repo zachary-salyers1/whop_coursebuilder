@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Whop App",
-	description: "My Whop App",
+	title: "AI Course Builder",
+	description: "Transform any PDF into a professional Whop course in 3 minutes with AI.",
 };
 
 export default function RootLayout({

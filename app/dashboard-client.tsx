@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import GettingStartedGuide from './components/GettingStartedGuide';
 
 interface UsageSummary {
   currentMonth: {
@@ -154,6 +155,9 @@ export default function DashboardClient({ userId, companyId: propCompanyId }: Da
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Getting Started Guide */}
+        <GettingStartedGuide />
+
         {/* Usage Stats */}
         {usage && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
