@@ -67,10 +67,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Last resort: Use environment variable as fallback
-    // This is needed when accessing the app dashboard directly (not via experience)
+    // If no company ID, try to get user's companies from Whop API
     console.log('🔍 Checking company ID. companyId:', companyId, 'experienceId:', experienceId);
 
+    if (!companyId) {
+      try {
+        // Try to get companies the user owns/manages
+        console.log('🔍 Fetching user companies via Whop API');
+        const companiesResponse = await fetch(`https://api.whop.com/api/v1/me/companies`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+            'X-On-Behalf-Of': tokenResult.userId,
+          },
+        });
+
+        console.log('📊 Companies API status:', companiesResponse.status);
+
+        if (companiesResponse.ok) {
+          const companiesData = await companiesResponse.json();
+          console.log('📊 Companies API response:', JSON.stringify(companiesData).substring(0, 500));
+
+          if (companiesData.data && companiesData.data.length > 0) {
+            companyId = companiesData.data[0].id;
+            console.log('✅ Got company ID from user companies:', companyId);
+          }
+        } else {
+          const errorText = await companiesResponse.text();
+          console.error('❌ Companies API error:', companiesResponse.status, errorText);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch user companies:', error);
+      }
+    }
+
+    // Final fallback to env (only for development/testing)
     if (!companyId && process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
       companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
       console.log('📍 Using fallback company ID from env:', companyId);
