@@ -15,8 +15,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3
       '@whop/api':
-        specifier: ^0.0.29
-        version: 0.0.29
+        specifier: ^0.0.51
+        version: 0.0.51(@auth/core@0.40.0)
       '@whop/react':
         specifier: 0.2.14
         version: 0.2.14(@types/react-dom@19.1.5(@types/react@19.1.4))(@types/react@19.1.4)(framer@2.4.1(framer-motion@10.18.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -103,6 +103,20 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@auth/core@0.40.0':
+    resolution: {integrity: sha512-n53uJE0RH5SqZ7N1xZoMKekbHfQgjd0sAEyUbE+IYJnmuQkbvuZnXItCU7d+i7Fj8VGOgqvNO7Mw4YfBTlZeQw==}
+    peerDependencies:
+      '@simplewebauthn/browser': ^9.0.1
+      '@simplewebauthn/server': ^9.0.2
+      nodemailer: ^6.8.0
+    peerDependenciesMeta:
+      '@simplewebauthn/browser':
+        optional: true
+      '@simplewebauthn/server':
+        optional: true
+      nodemailer:
+        optional: true
 
   '@biomejs/biome@1.9.4':
     resolution: {integrity: sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog==}
@@ -704,6 +718,9 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@panva/hkdf@1.2.1':
+    resolution: {integrity: sha512-6oclG6Y3PiDFcoyk8srjLfVKyMfVCKJ27JwNPViuXziFpmdz+MZnZN/aKY0JGXgYuO/VghU0jcOAZgWXZ1Dmrw==}
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -2115,6 +2132,12 @@ packages:
     resolution: {integrity: sha512-s/4Sv5GsfeHXaWHy+6jFuXORia3J3oUAhvw21onZGbohPP0fqsXqKyv8/xzl224TxZqBFuc561YRpvGSN8cS5Q==}
     engines: {node: 22.x, pnpm: 9.15.9}
 
+  '@whop/api@0.0.51':
+    resolution: {integrity: sha512-9BcMNeJQBPMyOP2AIwBZmOVgkcEvVUqFZkK+sFM0UxjuTmSy1+AA4IcBHM+sUf6LW6SSTN3Ez8ZLphm2CoQMig==}
+    engines: {node: 22.x, pnpm: 9.15.9}
+    peerDependencies:
+      '@auth/core': ^0.40.0
+
   '@whop/checkout@0.0.30':
     resolution: {integrity: sha512-A6kUJ9crBdOI37/+io6DDqfEkmLe2EhLSfpPan01el//QDKkN5OZLlKlaxrEnnyNN3Fv+jLGIR4rlwdY40ybFA==}
     engines: {node: 22.x, pnpm: 9.15.9}
@@ -2795,6 +2818,9 @@ packages:
   node-ensure@0.0.0:
     resolution: {integrity: sha512-DRI60hzo2oKN1ma0ckc6nQWlHU69RH6xN0sjQTjMpChPfTYvKZdcQFfdYK2RWbJcKyUizSIy/l8OTGxMAM1QDw==}
 
+  oauth4webapi@3.8.3:
+    resolution: {integrity: sha512-pQ5BsX3QRTgnt5HxgHwgunIRaDXBdkT23tf8dfzmtTIL2LTpdmxgbpbBm0VgFWAIDlezQvQCTgnVIUmHupXHxw==}
+
   openai@6.7.0:
     resolution: {integrity: sha512-mgSQXa3O/UXTbA8qFzoa7aydbXBJR5dbLQXCRapAOtoNT+v69sLdKMZzgiakpqhclRnhPggPAXoniVGn2kMY2A==}
     hasBin: true
@@ -2835,6 +2861,14 @@ packages:
   postgres@3.4.7:
     resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
     engines: {node: '>=12'}
+
+  preact-render-to-string@6.5.11:
+    resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
+    peerDependencies:
+      preact: '>=10'
+
+  preact@10.24.3:
+    resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
 
   property-information@6.5.0:
     resolution: {integrity: sha512-PgTgs/BlvHxOu8QuEN7wi5A0OmXaBcHpmCSTehcs6Uuu9IkDIEo13Hy7n898RHfrQ49vKCoGeWZSaAK01nwVig==}
@@ -3142,6 +3176,14 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
+
+  '@auth/core@0.40.0':
+    dependencies:
+      '@panva/hkdf': 1.2.1
+      jose: 6.0.11
+      oauth4webapi: 3.8.3
+      preact: 10.24.3
+      preact-render-to-string: 6.5.11(preact@10.24.3)
 
   '@biomejs/biome@1.9.4':
     optionalDependencies:
@@ -3541,6 +3583,8 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@15.3.5':
     optional: true
+
+  '@panva/hkdf@1.2.1': {}
 
   '@radix-ui/number@1.1.1': {}
 
@@ -5445,6 +5489,16 @@ snapshots:
       js-md5: 0.8.3
       tiny-typed-emitter: 2.1.0
 
+  '@whop/api@0.0.51(@auth/core@0.40.0)':
+    dependencies:
+      '@auth/core': 0.40.0
+      graphql: 16.11.0
+      graphql-request: 7.4.0(graphql@16.11.0)
+      graphql-tag: 2.12.6(graphql@16.11.0)
+      jose: 6.0.11
+      js-md5: 0.8.3
+      tiny-typed-emitter: 2.1.0
+
   '@whop/checkout@0.0.30': {}
 
   '@whop/iframe@0.0.3':
@@ -6311,6 +6365,8 @@ snapshots:
 
   node-ensure@0.0.0: {}
 
+  oauth4webapi@3.8.3: {}
+
   openai@6.7.0(zod@4.1.12):
     optionalDependencies:
       zod: 4.1.12
@@ -6353,6 +6409,12 @@ snapshots:
       source-map-js: 1.2.1
 
   postgres@3.4.7: {}
+
+  preact-render-to-string@6.5.11(preact@10.24.3):
+    dependencies:
+      preact: 10.24.3
+
+  preact@10.24.3: {}
 
   property-information@6.5.0: {}
 

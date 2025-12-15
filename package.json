@@ -16,7 +16,7 @@
   "dependencies": {
     "@vercel/blob": "^2.0.0",
     "@vercel/functions": "^2.0.3",
-    "@whop/api": "^0.0.29",
+    "@whop/api": "^0.0.51",
     "@whop/react": "0.2.14",
     "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.7",
