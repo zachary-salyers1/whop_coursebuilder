@@ -55,42 +55,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Last resort: Query user's companies using SDK
+    // Last resort: Use environment variable as fallback
     // This is needed when accessing the app dashboard directly (not via experience)
-    console.log('🔍 About to check membership query. companyId:', companyId, 'experienceId:', experienceId);
+    console.log('🔍 Checking company ID. companyId:', companyId, 'experienceId:', experienceId);
 
-    if (!companyId) {
-      try {
-        console.log('🔍 Fetching user companies via Whop SDK');
-
-        // Use Whop SDK to get companies the user has access to
-        const userSdk = whopSdk.withUser(tokenResult.userId);
-        const companiesResponse = await userSdk.companies.listCompanies({});
-
-        console.log('📊 Companies SDK response:', JSON.stringify(companiesResponse).substring(0, 500));
-
-        // Get company ID from the first company
-        if (companiesResponse.data && companiesResponse.data.length > 0) {
-          companyId = companiesResponse.data[0].id;
-          console.log('✅ Got company ID from SDK:', companyId, `(${companiesResponse.data.length} total companies)`);
-        } else {
-          console.log('⚠️  No companies found for user');
-
-          // Fallback: use the app's default company from env
-          if (process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
-            companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
-            console.log('📍 Using fallback company ID from env:', companyId);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Failed to fetch user companies:', error);
-
-        // Fallback: use the app's default company from env
-        if (process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
-          companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
-          console.log('📍 Using fallback company ID from env after error:', companyId);
-        }
-      }
+    if (!companyId && process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
+      companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
+      console.log('📍 Using fallback company ID from env:', companyId);
     }
 
     console.log('🔍 Auth debug:', {
