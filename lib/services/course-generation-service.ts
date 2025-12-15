@@ -21,13 +21,12 @@ import type {
 
 export class CourseGenerationService {
   /**
-   * Main orchestration function: Generate course from PDF
+   * Start generation - creates record and returns immediately
+   * Use processGenerationBackground() separately with after() for actual processing
    */
-  static async generateCourse(
+  static async startGeneration(
     request: GenerateCourseRequest
   ): Promise<GenerateCourseResponse> {
-    const startTime = Date.now();
-
     try {
       // 1. Check usage limits
       const usageCheck = await SubscriptionService.checkUsageLimit(
@@ -70,11 +69,6 @@ export class CourseGenerationService {
         createdAt: new Date(),
       });
 
-      // 6. Start async processing (don't await)
-      this.processGeneration(generation.id, request.pdfUploadId).catch((error) => {
-        console.error('Background generation error:', error);
-      });
-
       return {
         generationId: generation.id,
         status: 'processing',
@@ -82,7 +76,7 @@ export class CourseGenerationService {
         message: 'Course generation started',
       };
     } catch (error) {
-      console.error('Generate Course Error:', error);
+      console.error('Start Generation Error:', error);
       throw new Error(
         `Failed to start course generation: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -90,9 +84,23 @@ export class CourseGenerationService {
   }
 
   /**
-   * Process course generation in the background
+   * Legacy method for backwards compatibility
    */
-  private static async processGeneration(
+  static async generateCourse(
+    request: GenerateCourseRequest
+  ): Promise<GenerateCourseResponse> {
+    const result = await this.startGeneration(request);
+    // Start background processing (fire and forget for legacy callers)
+    this.processGenerationBackground(result.generationId, request.pdfUploadId).catch((error) => {
+      console.error('Background generation error:', error);
+    });
+    return result;
+  }
+
+  /**
+   * Process course generation - call this with after() for serverless background execution
+   */
+  static async processGenerationBackground(
     generationId: string,
     pdfUploadId: string
   ): Promise<void> {

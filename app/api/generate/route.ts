@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { CourseGenerationService } from '@/lib/services/course-generation-service';
 import { UserService } from '@/lib/services/user-service';
 import { SubscriptionService } from '@/lib/services/subscription-service';
+
+export const maxDuration = 300; // 5 minutes max (requires Pro plan, otherwise 60s)
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,11 +33,25 @@ export async function POST(request: NextRequest) {
     // Check usage limits
     const usageCheck = await SubscriptionService.checkUsageLimit(user.id);
 
-    // Generate course
-    const result = await CourseGenerationService.generateCourse({
+    // Start course generation (returns immediately with generation ID)
+    const result = await CourseGenerationService.startGeneration({
       userId: user.id,
       pdfUploadId,
       customTitle,
+    });
+
+    // Use after() to run the actual generation in background after response
+    after(async () => {
+      try {
+        console.log('Starting background generation for:', result.generationId);
+        await CourseGenerationService.processGenerationBackground(
+          result.generationId,
+          pdfUploadId
+        );
+        console.log('Background generation completed for:', result.generationId);
+      } catch (error) {
+        console.error('Background generation error:', error);
+      }
     });
 
     return NextResponse.json({
