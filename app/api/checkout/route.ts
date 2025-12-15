@@ -54,13 +54,14 @@ export async function POST(request: NextRequest) {
     // Build the plan object for dynamic checkout configuration
     const planPayload: Record<string, unknown> = {
       company_id: targetCompanyId,
-      initial_price: planConfig.price,
       plan_type: planConfig.planType,
       currency: 'usd',
     };
 
     // Add renewal-specific fields
     if (planConfig.planType === 'renewal') {
+      // For subscriptions: initial_price is $0 (no setup fee), renewal_price is the monthly charge
+      planPayload.initial_price = 0;
       planPayload.renewal_price = planConfig.price;
       planPayload.billing_period = planConfig.billingPeriod;
       planPayload.product = {
@@ -68,7 +69,8 @@ export async function POST(request: NextRequest) {
         title: planConfig.productName,
       };
     } else {
-      // One-time purchase
+      // One-time purchase: only initial_price matters
+      planPayload.initial_price = planConfig.price;
       planPayload.product = {
         external_identifier: `course-builder-${plan}-${userId}-${Date.now()}`,
         title: planConfig.productName,
