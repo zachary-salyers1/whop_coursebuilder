@@ -3,9 +3,32 @@ import { subscriptions, users, usageEvents, courseGenerations } from '../db/sche
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import type { UsageLimitCheck, UsageSummary } from '../types/domain';
 
+// Plan configurations
+const PLAN_CONFIGS = {
+  free: {
+    name: 'Free Plan',
+    price: 0,
+    generationsIncluded: 2,
+    overagePrice: 5.0,
+  },
+  growth: {
+    name: 'Growth Plan',
+    price: 29.0,
+    generationsIncluded: 10,
+    overagePrice: 5.0,
+  },
+} as const;
+
 export class SubscriptionService {
-  private static readonly MONTHLY_LIMIT = 10;
+  private static readonly DEFAULT_PLAN = 'free';
   private static readonly OVERAGE_PRICE = 5.0;
+
+  /**
+   * Get plan configuration by plan type
+   */
+  static getPlanConfig(planType: string) {
+    return PLAN_CONFIGS[planType as keyof typeof PLAN_CONFIGS] || PLAN_CONFIGS.free;
+  }
 
   /**
    * Get or create active subscription for user
@@ -45,7 +68,8 @@ export class SubscriptionService {
       return existing;
     }
 
-    // Create new subscription
+    // Create new subscription with FREE plan by default
+    const planConfig = this.getPlanConfig(this.DEFAULT_PLAN);
     const billingCycleStart = new Date();
     const billingCycleEnd = new Date();
     billingCycleEnd.setMonth(billingCycleEnd.getMonth() + 1);
@@ -54,9 +78,9 @@ export class SubscriptionService {
       .insert(subscriptions)
       .values({
         userId,
-        planType: 'growth',
+        planType: this.DEFAULT_PLAN,
         status: 'active',
-        monthlyLimit: this.MONTHLY_LIMIT,
+        monthlyLimit: planConfig.generationsIncluded,
         currentUsage: 0,
         billingCycleStart,
         billingCycleEnd,
@@ -66,6 +90,23 @@ export class SubscriptionService {
       .returning();
 
     return newSubscription;
+  }
+
+  /**
+   * Upgrade user's subscription to a new plan
+   */
+  static async upgradePlan(userId: string, newPlanType: 'growth'): Promise<void> {
+    const subscription = await this.getOrCreateSubscription(userId);
+    const planConfig = this.getPlanConfig(newPlanType);
+
+    await db
+      .update(subscriptions)
+      .set({
+        planType: newPlanType,
+        monthlyLimit: planConfig.generationsIncluded,
+        updatedAt: new Date(),
+      })
+      .where(eq(subscriptions.id, subscription.id));
   }
 
   /**
@@ -131,6 +172,7 @@ export class SubscriptionService {
    */
   static async getUsageSummary(userId: string): Promise<UsageSummary> {
     const subscription = await this.getOrCreateSubscription(userId);
+    const planConfig = this.getPlanConfig(subscription.planType);
 
     // Calculate overage stats
     const overageCount = Math.max(0, subscription.currentUsage - subscription.monthlyLimit);
@@ -144,10 +186,10 @@ export class SubscriptionService {
         overageAmount,
       },
       plan: {
-        name: 'Growth Plan',
-        price: 29.0,
+        name: planConfig.name,
+        price: planConfig.price,
         generationsIncluded: subscription.monthlyLimit,
-        overagePrice: this.OVERAGE_PRICE,
+        overagePrice: planConfig.overagePrice,
       },
     };
   }
