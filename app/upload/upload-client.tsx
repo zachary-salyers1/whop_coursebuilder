@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function UploadClient({ userId, userName }: { userId: string; userName: string }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const [courseName, setCourseName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,7 @@ export default function UploadClient({ userId, userName }: { userId: string; use
         body: JSON.stringify({
           pdfUploadId: uploadData.data.uploadId,
           userId: userId,
+          customTitle: courseName.trim() || undefined,
         }),
       });
 
@@ -215,6 +217,32 @@ export default function UploadClient({ userId, userName }: { userId: string; use
               </div>
             )}
           </div>
+
+          {/* Course Name Input */}
+          {file && (
+            <div className="mt-6">
+              <label htmlFor="course-name" className="block text-sm font-medium mb-2" style={{ color: 'var(--gray-12)' }}>
+                Course Name
+              </label>
+              <input
+                type="text"
+                id="course-name"
+                value={courseName}
+                onChange={(e) => setCourseName(e.target.value)}
+                placeholder="Enter a name for your course (optional)"
+                disabled={uploading || generating}
+                className="w-full px-4 py-3 rounded-md text-sm disabled:opacity-50"
+                style={{
+                  background: 'var(--gray-3)',
+                  border: '1px solid var(--gray-a6)',
+                  color: 'var(--gray-12)'
+                }}
+              />
+              <p className="mt-1 text-xs" style={{ color: 'var(--gray-11)' }}>
+                Leave empty to auto-generate from PDF content
+              </p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

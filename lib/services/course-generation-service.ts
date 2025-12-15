@@ -175,13 +175,25 @@ export class CourseGenerationService {
       // 6. Save to database
       await this.saveCourseStructure(generationId, courseStructure);
 
-      // 7. Update generation record
+      // 7. Update generation record with AI-generated title and completion status
       const generationTime = Date.now() - startTime;
+
+      // Get current generation to check if custom title was provided
+      const [currentGen] = await db
+        .select()
+        .from(courseGenerations)
+        .where(eq(courseGenerations.id, generationId));
+
+      // Use AI-generated title if current title is 'Untitled Course'
+      const finalTitle = currentGen?.courseTitle === 'Untitled Course'
+        ? content.courseTitle
+        : currentGen?.courseTitle;
 
       await db
         .update(courseGenerations)
         .set({
           status: 'completed',
+          courseTitle: finalTitle,
           structureJson: courseStructure as any,
           aiTokensUsed: AIService.estimateTokens(pdfText),
           generationTimeMs: generationTime,
