@@ -1,0 +1,266 @@
+Oct 28, 2025 6:37 AM
+Hey Dee! I’m developing an app for whop and have some questions on the integrations based on the whop infrastructure. Do you have any idea of whom I could contact? I’ve tried reaching out to some people on X who are in the engineering team but havent had any luck with responses. Any help would be amazing!
+
+Oct 28, 2025 11:39 AM
+@Dee accepted the message request.
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 28, 2025 11:39 AM
+Hey! 
+
+This is my department! So, ask away!
+
+Oct 28, 2025 5:23 PM
+Hey Dee! I am in the process of trying to build a course generator app within whop. I have the app set up to upload a PDF, then have AI generate the course and all the content. I have one question related to being able to publish these courses within the Whop courses app. Is it possible for this to occur with the current Whop infrastructure? Currently once I try to publish them, they are added to the whop courses app, to move the module to a course, but when I try to do this, they are not being moved. Is this even possible?? 
+
+IMG_5527.jpeg
+IMG_5526.jpeg
+2 attachments
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 28, 2025 5:30 PM
+Can you clarify a little more? What’s happening with moving modules? 
+
+So once my app creates the course, I’m trying to move them into the whop courses app via the API. They appear to be actually added because the one image says I have 13 modules that I can move into the who courses app. I then hit start and try to move the module, but they are not actually being moved. I’m not sure if this is something that I am doing incorrectly or what. 
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 28, 2025 5:48 PM
+How are you creating courses?
+
+Might be na issue with moving modules 
+
+But even so why do that in the first place instead of just creating modules themselves 
+
+Oct 29, 2025 7:30 AM
+Heres a detailed breakdown of the current process!
+
+Oct 29, 2025 3:21 PM
+if I create the course under an experience, is it able to be moved into the whop courses app? Or should i not create the course under an experience, and try to move it into the courses app that way?
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 3:22 PM
+you should choose the experience the given course you want to add to is already in
+
+so under an experience, they cant be moved to the whop courses app? the user would have to view it under the experience that populates in the sidebar?
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 3:31 PM
+essentially, if you want to add another module, select a pre-existing course experience and add it there 
+
+if you specify a new experience it will create a new course 
+
+that would show up in the whop courses app, correct?
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 3:45 PM
+Whichever one, you select yes. A creator can have multiple 
+
+okay i am lost lol I have tried Attempt 1: Without Attaching to Product
+
+Created an Experience using POST to /api/v1/experiences
+
+Provided: app_id, company_id, name
+
+Result: Got back experience_id
+
+Created Courses (modules) using POST to /api/v1/courses
+
+Provided: experience_id, title, tagline
+
+Result: Got back course_id for each module
+
+Created Chapters using POST to /api/v1/course_chapters
+
+Provided: course_id, title
+
+Result: Got back chapter_id for each chapter
+
+Created Lessons using POST to /api/v1/course_lessons
+
+Provided: chapter_id, lesson_type, title, content
+
+Result: Got back lesson_id for each lesson
+
+Problem: Courses were created successfully but didn't appear in the Whop Courses app sidebar
+
+
+
+
+Guess this is what I get for vibe coding lol
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:29 PM
+😭
+😭
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:29 PM
+omg 
+
+okay, let me ask you this. Is your app used in a contest a creator would already have a course?
+
+*context
+
+No the idea was that my app would generate the course material off of say a pdf or something. Then publish it to the whop courses app. Thats what my plan was lol
+
+Looking at the new api, I thought it could be possible 
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:32 PM
+okay, so basically this creator would have a pre-existing courses app already. This means your app wants to first retrieve that specific course (by course id) and then add to it.
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:32 PM
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:33 PM
+You’d start here ^ grab a course id 
+
+then create a chapter inside of the id you fetched: https://docs.whop.com/api-reference/course-chapters/create-course-chapter
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:33 PM
+then subsequently lessons: https://docs.whop.com/api-reference/course-lessons/create-course-lesson
+
+Omg. I’m an idiot…. They would just have to go in, create a course. Then mine would add the content. 
+
+9F354DCE-76F0-4A5A-ABEC-A3F8813BD40B.png
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:39 PM
+Yes, though just to clarify, this endpoint did not make a courses app on the sidebar?
+
+
+
+https://docs.whop.com/api-reference/courses/create-course
+
+@Zachary Salyers just gave @Dee a "Helpful" badge.
+
+I don’t really want that. I just wanted it mainly in the courses app. That is what Claude was saying the best approach was is creating an experience 
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 4:43 PM
+Got it! Well definitely try this out and let me know how it goes ☺️
+
+Progress!!
+
+image.png
+
+🔥️
+1
+
+‼️
+1
+it looks like the content was added, but when you go in to view it/edit it. nothing is appearing.
+
+image.png
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 5:06 PM
+hmmm just the media or even the text?
+
+yeah nothing. this is the json result for the course too: {"success":true,"courseData":{"id":"cors_lNtncpRzr5Rqn","title":"AI Automation for Small Business: A Practical Guide to Getting Started","tagline":"","thumbnail":null,"description":null,"language":"en","certificate_after_completion_enabled":false,"require_completing_lessons_in_order":false,"created_at":"2025-10-29T20:55:48.605Z","updated_at":"2025-10-29T20:55:48.605Z","chapters":[{"id":"chap_2mmVH8gnHxFpTJMhVsPUSV","title":"Chapter 1","order":0,"lessons":[{"id":"lesn_1k7nbc1UtZxpIwhTIpska7","lesson_type":"multi","title":"Lesson 1","order":0},{"id":"lesn_5zf3l9K7YP7OHHkwdS0cjo","lesson_type":"multi","title":"Lesson 2","order":1},{"id":"lesn_77VsRYJCLshLw0dWEeXRfX","lesson_type":"multi","title":"Lesson 3","order":2}]},{"id":"chap_OVJWKxE680as8","title":"Transform Your Business Landscape","order":1,"lessons":[{"id":"lesn_bGTZgurkkqxlg","lesson_type":"text","title":"Unlock Enterprise Capabilities","order":0}]},{"id":"chap_sZ3JEB3JAwvL3","title":"Debunking AI Myths","order":2,"lessons":[{"id":"lesn_VhqAKhvOm5BUy","lesson_type":"text","title":"Cost-Effective AI Solutions","order":0},{"id":"lesn_ao78jjzD3tAv2","lesson_type":"text","title":"Ease of Use Without Tech Skills","order":1}]},{"id":"chap_j4cuWpbVz6xBb","title":"Automate Customer Engagement","order":3,"lessons":[{"id":"lesn_Cyqejxs2stGhs","lesson_type":"text","title":"Implement Chatbots for 24/7 Support","order":0},{"id":"lesn_SF16GwycUvrgv","lesson_type":"text","title":"Analyze Customer Sentiment","order":1}]},{"id":"chap_qphu7U5ngTJeX","title":"Streamline Email Communication","order":4,"lessons":[{"id":"lesn_rlTPdOyoB812g","lesson_type":"text","title":"Automate Follow-Up Sequences","order":0},{"id":"lesn_f0QZy9Qlycav4","lesson_type":"text","title":"Personalize at Scale with AI","order":1}]},{"id":"chap_wGAMVMRrHvO55","title":"Optimize Content Creation","order":5,"lessons":[{"id":"lesn_toupqvRZrfVY9","lesson_type":"text","title":"Generate Engaging Content Effortlessly","order":0},{"id":"lesn_40WPSVJXf24Rx","lesson_type":"text","title":"Refine Content with AI Insights","order":1}]},{"id":"chap_N2yBJs7ZQyzOh","title":"Enhance Social Media Impact","order":6,"lessons":[{"id":"lesn_L3hjJRur9dxEH","lesson_type":"text","title":"Automate Social Media Scheduling","order":0},{"id":"lesn_9M8LtM0oN7b31","lesson_type":"text","title":"Track and Respond to Trends","order":1}]},{"id":"chap_eSG1QEkjHsy1V","title":"Automate Lead Management","order":7,"lessons":[{"id":"lesn_EovT8osGgXKDK","lesson_type":"text","title":"Score Leads with Precision","order":0},{"id":"lesn_qxM8FoD7L5phM","lesson_type":"text","title":"Automate Personalized Follow-Ups","order":1}]},{"id":"chap_cr30WfmxtxDt1","title":"Predict Sales with Confidence","order":8,"lessons":[{"id":"lesn_GZ906o3Qma0Qq","lesson_type":"text","title":"Implement Accurate Sales Forecasting","order":0},{"id":"lesn_orNLjtsG8PwZd","lesson_type":"text","title":"Adjust Strategies with AI Insights","order":1},{"id":"lesn_prQHx3UU15hJr","lesson_type":"text","title":"Enhance CRM Processes","order":2}]},{"id":"chap_41Sb7KidmQkpR","title":"Revolutionize Invoice Processing","order":9,"lessons":[{"id":"lesn_d1TtN1dykVBks","lesson_type":"text","title":"Automate Invoice Data Extraction","order":0},{"id":"lesn_gxXogFERhjokx","lesson_type":"text","title":"Enhance Accuracy and Efficiency","order":1}]},{"id":"chap_qh267oNLpIWSa","title":"Refine Inventory Management","order":10,"lessons":[{"id":"lesn_7McYIDyhu5uoF","lesson_type":"text","title":"Predict Demand Accurately","order":0},{"id":"lesn_7e5gusBbeIOgp","lesson_type":"text","title":"Automate Reordering Processes","order":1},{"id":"lesn_MRHzi3yB6RLE7","lesson_type":"text","title":"Reduce Inventory Waste","order":2}]},{"id":"chap_hfyHIAjcJ0wbT","title":"Create Your 30-Day Action Plan","order":11,"lessons":[{"id":"lesn_OZAYCmG9ZnF2O","lesson_type":"text","title":"Identify Quick Wins","order":0},{"id":"lesn_2Ef2ZVHBFJ88p","lesson_type":"text","title":"Set Success Metrics and Goals","order":1},{"id":"lesn_Bdpzix9dWvpmh","lesson_type":"text","title":"Overcome Initial Challenges","order":2}]}]},"chaptersCount":12,"lessonsCount":27}
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 5:14 PM
+hmmmm, can you give me a few hours will be able to take a closer look shortly!
+
+
+
+can you also share the file you’re using to upload the course? 
+
+sure thing! THANK YOU SO MUCH FOR YOUR HELP!!!!!!!
+
+Oct 29, 2025 7:35 PM
+Okay so something weird. I’m on my phone and I can see the chapters and the content. But on my desktop I can’t see them. 
+
+IMG_5549.png
+and when i view the link to the course on a different whop account. i can see the chapters, but not the content
+
+image.png
+And I can see content on mobile 
+
+IMG_5550.png
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 7:41 PM
+can you link your courses app here
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Oct 29, 2025 7:47 PM
+hmmm, will have our eng team take a look at this tomorrow, really apologize! might be a few days for a fix, but please bare with us!!
+
+i totally get it! again thank you for taking the time to help me!
+
+Nov 03, 2025 10:48 AM
+Hey Dee! Just was curious as to if the engineering team had a chance to look at this yet??
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Nov 03, 2025 11:46 AM
+Sorry about this! Totally blanked on it, let me bump it now! Apologize about the delay 🙏
+
+Nov 03, 2025 5:40 PM
+Okay thank you!
+
+Nov 06, 2025 1:32 AM
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Nov 06, 2025 1:32 AM
+Hey! Can you try now?
+
+Nov 06, 2025 7:21 AM
+I am now able to see the modules, but the content is not populating!
+
+Here are the console logs when i try to load it
+
+image.png
+Nov 10, 2025 8:58 PM
+Any luck on this?
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Nov 10, 2025 9:00 PM
+We should’ve had a recent update to his weekend fix this? Still a problem?
+
+Dee
+This user is part of the Whop Police Force. They keep the platform safe from scammers, spammers, and rule-breakers.
+•
+Nov 10, 2025 9:18 PM
+Lmk! I want to get this figured out for your ASAP!
+
+Nov 12, 2025 8:56 AM
+It’s still showing the modules but not showing the content that’s there. I can only see if on the mobile app

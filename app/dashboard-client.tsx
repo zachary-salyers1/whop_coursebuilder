@@ -33,14 +33,24 @@ interface Generation {
   errorMessage: string | null;
 }
 
-export default function DashboardClient({ userId }: { userId: string }) {
+interface DashboardClientProps {
+  userId: string;
+  companyId?: string;
+}
+
+export default function DashboardClient({ userId, companyId: propCompanyId }: DashboardClientProps) {
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
 
-  // First get auth info including companyId
+  // If companyId not provided as prop, fetch from auth
   useEffect(() => {
+    if (propCompanyId) {
+      setCompanyId(propCompanyId);
+      return;
+    }
+
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((data) => {
@@ -49,9 +59,9 @@ export default function DashboardClient({ userId }: { userId: string }) {
         }
       })
       .catch(console.error);
-  }, []);
+  }, [propCompanyId]);
 
-  // Then fetch usage and generations with companyId
+  // Fetch usage and generations with companyId
   useEffect(() => {
     if (!userId || !companyId) return;
 
