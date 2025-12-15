@@ -37,6 +37,7 @@ export const users = pgTable('users', {
 export const subscriptions = pgTable('subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  whopCompanyId: varchar('whop_company_id', { length: 255 }).default('biz_1Io4EO2Twj9wo7').notNull(),
   whopMembershipId: varchar('whop_membership_id', { length: 255 }).unique(),
   planType: varchar('plan_type', { length: 50 }).default('growth').notNull(),
   status: subscriptionStatusEnum('status').default('active').notNull(),

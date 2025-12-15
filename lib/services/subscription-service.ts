@@ -33,13 +33,16 @@ export class SubscriptionService {
   /**
    * Get or create active subscription for user
    */
-  static async getOrCreateSubscription(userId: string) {
-    // Check for existing active subscription
+  static async getOrCreateSubscription(userId: string, companyId?: string) {
+    const targetCompanyId = companyId || process.env.NEXT_PUBLIC_WHOP_COMPANY_ID!;
+
+    // Check for existing active subscription for this user and company
     const [existing] = await db
       .select()
       .from(subscriptions)
       .where(and(
         eq(subscriptions.userId, userId),
+        eq(subscriptions.whopCompanyId, targetCompanyId),
         eq(subscriptions.status, 'active')
       ))
       .limit(1);
@@ -78,6 +81,7 @@ export class SubscriptionService {
       .insert(subscriptions)
       .values({
         userId,
+        whopCompanyId: targetCompanyId,
         planType: this.DEFAULT_PLAN,
         status: 'active',
         monthlyLimit: planConfig.generationsIncluded,

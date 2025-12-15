@@ -35,7 +35,8 @@ export class CourseGenerationService {
 
       // 2. Get user's subscription
       const subscription = await SubscriptionService.getOrCreateSubscription(
-        request.userId
+        request.userId,
+        request.companyId
       );
 
       // 3. Create generation record

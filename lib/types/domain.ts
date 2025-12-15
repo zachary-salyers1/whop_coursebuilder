@@ -86,6 +86,7 @@ export interface ContentGenerationResponse {
 // Service DTOs
 export interface GenerateCourseRequest {
   userId: string;
+  companyId?: string;
   pdfUploadId: string;
   customTitle?: string;
 }

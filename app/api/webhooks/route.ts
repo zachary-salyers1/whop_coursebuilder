@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { db } from "@/lib/db/client";
 import { users, subscriptions, purchasedCredits } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { UserService } from "@/lib/services/user-service";
 
 const validateWebhook = makeWebhookValidator({
 	webhookSecret: process.env.WHOP_WEBHOOK_SECRET ?? "fallback",
@@ -57,17 +58,24 @@ async function handlePaymentSuccess(
 	amount: number,
 	metadata?: WebhookMetadata
 ) {
-	if (!whopUserId || !metadata) {
-		console.log("Missing user_id or metadata in payment webhook", { whopUserId, metadata });
+	if (!whopUserId) {
+		console.log("Missing user_id in payment webhook", { whopUserId, metadata });
 		return;
 	}
 
-	const { userId, companyId, purchaseType, generationsIncluded } = metadata;
+	const { userId, companyId, purchaseType, generationsIncluded } = metadata || {};
 
-	// Try to find the user in our database
-	let dbUser = userId ? await db.query.users.findFirst({
-		where: eq(users.id, userId),
-	}) : null;
+	// Try to find the user in our database by internal ID first (if it's a valid UUID)
+	let dbUser = null;
+
+	// Check if userId looks like a UUID (internal ID) vs a Whop ID (starts with "user_")
+	const isInternalId = userId && !userId.startsWith('user_');
+
+	if (isInternalId) {
+		dbUser = await db.query.users.findFirst({
+			where: eq(users.id, userId),
+		});
+	}
 
 	// If we don't have the internal userId, try to find by whopUserId
 	if (!dbUser) {
@@ -76,9 +84,19 @@ async function handlePaymentSuccess(
 		});
 	}
 
+	// If user still not found, create them
 	if (!dbUser) {
-		console.error("Could not find user for payment", { whopUserId, userId, paymentId });
-		return;
+		console.log("User not found in database, creating new user", { whopUserId, companyId });
+		try {
+			dbUser = await UserService.getOrCreateUser({
+				id: whopUserId,
+				companyId: companyId || process.env.NEXT_PUBLIC_WHOP_COMPANY_ID,
+			});
+			console.log("Created new user from webhook", { dbUserId: dbUser.id, whopUserId });
+		} catch (createError) {
+			console.error("Failed to create user for payment", { whopUserId, paymentId, error: createError });
+			return;
+		}
 	}
 
 	if (purchaseType === 'additional') {
@@ -98,12 +116,15 @@ async function handlePaymentSuccess(
 
 		console.log(`Added ${credits} purchased credit(s) for user ${dbUser.id}`);
 	} else if (purchaseType === 'growth') {
+		const targetCompanyId = companyId || process.env.NEXT_PUBLIC_WHOP_COMPANY_ID!;
+
 		// Upgrade the user's subscription to growth plan
 		const [existingSubscription] = await db
 			.select()
 			.from(subscriptions)
 			.where(and(
 				eq(subscriptions.userId, dbUser.id),
+				eq(subscriptions.whopCompanyId, targetCompanyId),
 				eq(subscriptions.status, 'active')
 			))
 			.limit(1);
@@ -127,6 +148,7 @@ async function handlePaymentSuccess(
 
 			await db.insert(subscriptions).values({
 				userId: dbUser.id,
+				whopCompanyId: targetCompanyId,
 				planType: 'growth',
 				status: 'active',
 				monthlyLimit: 10,
