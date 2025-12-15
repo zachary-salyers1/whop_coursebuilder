@@ -32,6 +32,9 @@ importers:
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      marked:
+        specifier: ^17.0.1
+        version: 17.0.1
       next:
         specifier: 15.3.8
         version: 15.3.8(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2653,6 +2656,11 @@ packages:
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
+
+  marked@17.0.1:
+    resolution: {integrity: sha512-boeBdiS0ghpWcSwoNm/jJBwdpFaMnZWRzjA6SkUMYb40SVaN1x7mmfGKp0jvexGcx+7y2La5zRZsYFZI6Qpypg==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   mdast-util-find-and-replace@3.0.2:
     resolution: {integrity: sha512-Tmd1Vg/m3Xz43afeNxDIhWRtFZgM2VLyaf4vSTYwudTyeuTneoL3qtWMA5jeLyz/O1vDJmmV4QuScFCA2tBPwg==}
@@ -6006,6 +6014,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.0
 
   markdown-table@3.0.4: {}
+
+  marked@17.0.1: {}
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:

@@ -1,5 +1,20 @@
 import { whopSdk } from '../whop-sdk';
 import type { CourseStructure } from '../types/domain';
+import { marked } from 'marked';
+
+// Configure marked for better output
+marked.setOptions({
+  breaks: true, // Convert \n to <br>
+  gfm: true, // GitHub Flavored Markdown
+});
+
+/**
+ * Convert markdown content to HTML for Whop
+ */
+function markdownToHtml(markdown: string): string {
+  if (!markdown) return '';
+  return marked.parse(markdown) as string;
+}
 
 interface WhopCourse {
   id: string;
@@ -213,6 +228,9 @@ export class WhopAPIService {
     try {
       console.log('Creating lesson with:', { chapterId, title });
 
+      // Convert markdown to HTML for proper rendering in Whop
+      const htmlContent = markdownToHtml(content);
+
       const response = await fetch('https://api.whop.com/api/v1/course_lessons', {
         method: 'POST',
         headers: {
@@ -223,7 +241,7 @@ export class WhopAPIService {
           chapter_id: chapterId,
           lesson_type: 'text',
           title: title,
-          content: content,
+          content: htmlContent,
         }),
       });
 
@@ -458,13 +476,19 @@ export class WhopAPIService {
     try {
       console.log('Updating lesson:', lessonId, updates);
 
+      // Convert markdown to HTML if content is being updated
+      const processedUpdates = { ...updates };
+      if (processedUpdates.content) {
+        processedUpdates.content = markdownToHtml(processedUpdates.content);
+      }
+
       const response = await fetch(`https://api.whop.com/api/v1/course_lessons/${lessonId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(processedUpdates),
       });
 
       if (!response.ok) {

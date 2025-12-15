@@ -22,6 +22,7 @@
     "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.7",
     "highlight.js": "^11.11.1",
+    "marked": "^17.0.1",
     "next": "15.3.8",
     "openai": "^6.7.0",
     "pdf-parse": "1.1.1",
