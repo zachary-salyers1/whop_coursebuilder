@@ -9,16 +9,16 @@ const PLAN_CONFIGS: Record<string, {
   generationsIncluded: number;
 }> = {
   growth: {
-    price: 2900, // $29.00 in cents
+    price: 29, // $29.00
     planType: 'renewal',
     billingPeriod: 30, // Monthly
-    productName: 'AI Course Builder - Growth Plan',
+    productName: 'Course Builder - Growth',
     generationsIncluded: 10,
   },
   additional: {
-    price: 500, // $5.00 in cents
+    price: 5, // $5.00
     planType: 'one_time',
-    productName: 'AI Course Builder - Additional Generation',
+    productName: 'Extra Generation Credit',
     generationsIncluded: 1,
   },
 };
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Create checkout configuration via Whop API
-    const response = await fetch('https://api.whop.com/api/v5/checkout_configurations', {
+    // Create checkout configuration via Whop API v1
+    const response = await fetch('https://api.whop.com/api/v1/checkout_configurations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,16 +100,22 @@ export async function POST(request: NextRequest) {
     }
 
     const checkoutConfig = await response.json();
+    console.log('Whop API Response:', JSON.stringify(checkoutConfig, null, 2));
 
-    if (!checkoutConfig.plan_id || !checkoutConfig.id) {
-      throw new Error('Invalid response from Whop API');
+    // The response might have different field names
+    const planId = checkoutConfig.plan_id || checkoutConfig.planId || checkoutConfig.plan?.id;
+    const configId = checkoutConfig.id || checkoutConfig.checkout_configuration_id;
+
+    if (!planId || !configId) {
+      console.error('Missing fields in response:', { planId, configId, checkoutConfig });
+      throw new Error('Invalid response from Whop API - missing plan_id or id');
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        planId: checkoutConfig.plan_id,
-        id: checkoutConfig.id,
+        planId: planId,
+        id: configId,
         plan,
         price: planConfig.price / 100, // Convert back to dollars for display
         productName: planConfig.productName,
