@@ -10,6 +10,7 @@ interface UsageSummary {
     generationsIncluded: number;
     overageCount: number;
     overageAmount: number;
+    purchasedCreditsAvailable?: number;
   };
   plan: {
     name: string;
@@ -215,6 +216,28 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Purchased Credits */}
+            {usage.currentMonth.purchasedCreditsAvailable !== undefined && usage.currentMonth.purchasedCreditsAvailable > 0 && (
+              <div
+                className="rounded-lg shadow p-6 mt-6"
+                style={{ background: 'var(--success-2)', border: '1px solid var(--success-6)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--success-11)' }}>
+                      Purchased Credits
+                    </h3>
+                    <p className="text-sm" style={{ color: 'var(--success-11)' }}>
+                      You have additional credits that can be used after your monthly limit
+                    </p>
+                  </div>
+                  <span className="text-3xl font-bold" style={{ color: 'var(--success-11)' }}>
+                    {usage.currentMonth.purchasedCreditsAvailable}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Overage Info */}
             {usage.currentMonth.overageCount > 0 && (
               <div
@@ -247,6 +270,7 @@ export default function ProfilePage() {
               companyId={user.companyId}
               currentPlan={usage.plan.name}
               remainingGenerations={remainingGenerations}
+              purchasedCredits={usage.currentMonth.purchasedCreditsAvailable}
             />
           </div>
         )}

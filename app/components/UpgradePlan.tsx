@@ -8,6 +8,7 @@ interface UpgradePlanProps {
   companyId?: string;
   currentPlan?: string;
   remainingGenerations: number;
+  purchasedCredits?: number;
 }
 
 export default function UpgradePlan({
@@ -15,6 +16,7 @@ export default function UpgradePlan({
   companyId,
   currentPlan,
   remainingGenerations,
+  purchasedCredits = 0,
 }: UpgradePlanProps) {
   const iframeSdk = useIframeSdk();
   const [loading, setLoading] = useState<string | null>(null);
@@ -109,8 +111,9 @@ export default function UpgradePlan({
             </h3>
             <p className="text-sm mt-1" style={{ color: 'var(--gray-11)' }}>
               {remainingGenerations > 0
-                ? `You have ${remainingGenerations} generations remaining this month.`
+                ? `You have ${remainingGenerations} included generations remaining this month.`
                 : 'You have used all your included generations this month.'}
+              {purchasedCredits > 0 && ` Plus ${purchasedCredits} purchased credit${purchasedCredits > 1 ? 's' : ''}.`}
             </p>
             <p className="text-sm mt-1" style={{ color: 'var(--gray-11)' }}>
               Purchase additional course generations for <strong>$5 each</strong>.

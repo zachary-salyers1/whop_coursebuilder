@@ -1,6 +1,6 @@
 import { db } from '../db/client';
-import { subscriptions, users, usageEvents, courseGenerations } from '../db/schema';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { subscriptions, usageEvents, courseGenerations, purchasedCredits } from '../db/schema';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import type { UsageLimitCheck, UsageSummary } from '../types/domain';
 
 // Plan configurations
@@ -93,6 +93,65 @@ export class SubscriptionService {
   }
 
   /**
+   * Get available purchased credits for user
+   */
+  static async getAvailablePurchasedCredits(userId: string): Promise<number> {
+    const credits = await db
+      .select()
+      .from(purchasedCredits)
+      .where(and(
+        eq(purchasedCredits.userId, userId),
+        eq(purchasedCredits.status, 'available')
+      ));
+
+    return credits.reduce((sum, credit) => sum + credit.creditsRemaining, 0);
+  }
+
+  /**
+   * Use a purchased credit (deduct from available credits)
+   */
+  static async usePurchasedCredit(userId: string): Promise<boolean> {
+    // Find an available credit to use
+    const [availableCredit] = await db
+      .select()
+      .from(purchasedCredits)
+      .where(and(
+        eq(purchasedCredits.userId, userId),
+        eq(purchasedCredits.status, 'available')
+      ))
+      .orderBy(purchasedCredits.purchasedAt)
+      .limit(1);
+
+    if (!availableCredit) {
+      return false;
+    }
+
+    const newRemaining = availableCredit.creditsRemaining - 1;
+
+    if (newRemaining <= 0) {
+      // Mark as fully used
+      await db
+        .update(purchasedCredits)
+        .set({
+          creditsRemaining: 0,
+          status: 'used',
+          usedAt: new Date(),
+        })
+        .where(eq(purchasedCredits.id, availableCredit.id));
+    } else {
+      // Decrement remaining
+      await db
+        .update(purchasedCredits)
+        .set({
+          creditsRemaining: newRemaining,
+        })
+        .where(eq(purchasedCredits.id, availableCredit.id));
+    }
+
+    return true;
+  }
+
+  /**
    * Upgrade user's subscription to a new plan
    */
   static async upgradePlan(userId: string, newPlanType: 'growth'): Promise<void> {
@@ -114,16 +173,18 @@ export class SubscriptionService {
    */
   static async checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
     const subscription = await this.getOrCreateSubscription(userId);
+    const purchasedCreditsCount = await this.getAvailablePurchasedCredits(userId);
 
-    const remainingGenerations =
-      subscription.monthlyLimit - subscription.currentUsage;
-    const isOverage = remainingGenerations <= 0;
+    const remainingIncluded = subscription.monthlyLimit - subscription.currentUsage;
+    const totalRemaining = Math.max(0, remainingIncluded) + purchasedCreditsCount;
+    const isOverage = remainingIncluded <= 0 && purchasedCreditsCount <= 0;
 
     return {
-      hasAvailableGenerations: true, // Always allow with overage
+      hasAvailableGenerations: totalRemaining > 0 || true, // Always allow with overage option
       currentUsage: subscription.currentUsage,
       monthlyLimit: subscription.monthlyLimit,
-      remainingGenerations: Math.max(0, remainingGenerations),
+      remainingGenerations: Math.max(0, remainingIncluded),
+      purchasedCreditsAvailable: purchasedCreditsCount,
       isOverage,
       overageCost: isOverage ? this.OVERAGE_PRICE : 0,
     };
@@ -131,16 +192,20 @@ export class SubscriptionService {
 
   /**
    * Increment usage count for user
+   * Uses purchased credits if over monthly limit
    */
   static async incrementUsage(
     userId: string,
     generationId: string
-  ): Promise<{ isOverage: boolean; overageCharge: number }> {
+  ): Promise<{ isOverage: boolean; overageCharge: number; usedPurchasedCredit: boolean }> {
     const subscription = await this.getOrCreateSubscription(userId);
 
     const newUsage = subscription.currentUsage + 1;
-    const isOverage = newUsage > subscription.monthlyLimit;
-    const overageCharge = isOverage ? this.OVERAGE_PRICE : 0;
+    const wouldBeOverage = newUsage > subscription.monthlyLimit;
+
+    let usedPurchasedCredit = false;
+    let isOverage = false;
+    let overageCharge = 0;
 
     // Update subscription usage
     await db
@@ -151,6 +216,17 @@ export class SubscriptionService {
       })
       .where(eq(subscriptions.id, subscription.id));
 
+    // If over monthly limit, try to use a purchased credit
+    if (wouldBeOverage) {
+      usedPurchasedCredit = await this.usePurchasedCredit(userId);
+
+      if (!usedPurchasedCredit) {
+        // No purchased credits available, this is an overage
+        isOverage = true;
+        overageCharge = this.OVERAGE_PRICE;
+      }
+    }
+
     // Log usage event
     await db.insert(usageEvents).values({
       userId,
@@ -160,11 +236,12 @@ export class SubscriptionService {
         usageCount: newUsage,
         isOverage,
         overageCharge,
+        usedPurchasedCredit,
       },
       createdAt: new Date(),
     });
 
-    return { isOverage, overageCharge };
+    return { isOverage, overageCharge, usedPurchasedCredit };
   }
 
   /**
@@ -173,6 +250,7 @@ export class SubscriptionService {
   static async getUsageSummary(userId: string): Promise<UsageSummary> {
     const subscription = await this.getOrCreateSubscription(userId);
     const planConfig = this.getPlanConfig(subscription.planType);
+    const purchasedCreditsCount = await this.getAvailablePurchasedCredits(userId);
 
     // Calculate overage stats
     const overageCount = Math.max(0, subscription.currentUsage - subscription.monthlyLimit);
@@ -184,6 +262,7 @@ export class SubscriptionService {
         generationsIncluded: subscription.monthlyLimit,
         overageCount,
         overageAmount,
+        purchasedCreditsAvailable: purchasedCreditsCount,
       },
       plan: {
         name: planConfig.name,

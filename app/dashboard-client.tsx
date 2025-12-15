@@ -9,6 +9,7 @@ interface UsageSummary {
     generationsIncluded: number;
     overageCount: number;
     overageAmount: number;
+    purchasedCreditsAvailable?: number;
   };
   plan: {
     name: string;
@@ -182,6 +183,18 @@ export default function DashboardClient({ userId, companyId: propCompanyId }: Da
                 ${usage.plan.price}/month • {usage.plan.generationsIncluded} generations
               </p>
             </div>
+
+            {usage.currentMonth.purchasedCreditsAvailable !== undefined && usage.currentMonth.purchasedCreditsAvailable > 0 && (
+              <div className="rounded-lg shadow p-6" style={{ background: 'var(--success-2)', border: '1px solid var(--success-6)' }}>
+                <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--success-11)' }}>Purchased Credits</h3>
+                <p className="text-2xl font-bold" style={{ color: 'var(--success-11)' }}>
+                  {usage.currentMonth.purchasedCreditsAvailable}
+                </p>
+                <p className="text-sm font-medium mt-1" style={{ color: 'var(--success-11)' }}>
+                  Extra credits available to use
+                </p>
+              </div>
+            )}
 
             {usage.currentMonth.overageCount > 0 && (
               <div className="rounded-lg shadow p-6" style={{ background: 'var(--warning-2)', border: '1px solid var(--warning-6)' }}>

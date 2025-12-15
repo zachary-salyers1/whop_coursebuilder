@@ -113,6 +113,7 @@ export interface UsageLimitCheck {
   currentUsage: number;
   monthlyLimit: number;
   remainingGenerations: number;
+  purchasedCreditsAvailable?: number;
   isOverage: boolean;
   overageCost: number;
 }
@@ -141,6 +142,7 @@ export interface UsageSummary {
     generationsIncluded: number;
     overageCount: number;
     overageAmount: number;
+    purchasedCreditsAvailable?: number;
   };
   plan: {
     name: string;

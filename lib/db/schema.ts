@@ -16,6 +16,7 @@ export const usageEventTypeEnum = pgEnum('usage_event_type', [
   'course_published'
 ]);
 export const overageStatusEnum = pgEnum('overage_status', ['pending', 'charged', 'failed']);
+export const creditStatusEnum = pgEnum('credit_status', ['available', 'used', 'expired']);
 
 // Users Table
 export const users = pgTable('users', {
@@ -152,6 +153,20 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Purchased Credits Table - tracks additional generation credits purchased
+export const purchasedCredits = pgTable('purchased_credits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  whopPaymentId: varchar('whop_payment_id', { length: 255 }).unique(),
+  creditsAmount: integer('credits_amount').default(1).notNull(),
+  creditsRemaining: integer('credits_remaining').default(1).notNull(),
+  amountPaid: decimal('amount_paid', { precision: 10, scale: 2 }).notNull(),
+  status: creditStatusEnum('status').default('available').notNull(),
+  purchasedAt: timestamp('purchased_at').defaultNow().notNull(),
+  usedAt: timestamp('used_at'),
+  metadata: jsonb('metadata'),
+});
+
 // Lesson Progress Table
 export const lessonProgress = pgTable('lesson_progress', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -173,6 +188,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   usageEvents: many(usageEvents),
   overageCharges: many(overageCharges),
   lessonProgress: many(lessonProgress),
+  purchasedCredits: many(purchasedCredits),
+}));
+
+export const purchasedCreditsRelations = relations(purchasedCredits, ({ one }) => ({
+  user: one(users, {
+    fields: [purchasedCredits.userId],
+    references: [users.id],
+  }),
 }));
 
 export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
