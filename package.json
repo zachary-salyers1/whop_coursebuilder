@@ -23,7 +23,7 @@
     "highlight.js": "^11.11.1",
     "next": "15.3.8",
     "openai": "^6.7.0",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "1.1.1",
     "postgres": "^3.4.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

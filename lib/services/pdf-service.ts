@@ -1,57 +1,10 @@
 import { put } from '@vercel/blob';
 import { db } from '../db/client';
 import { pdfUploads } from '../db/schema';
-import type { NewPdfUpload } from '../types/database';
 import { eq } from 'drizzle-orm';
 
-// Setup worker and polyfills for PDF.js in Node.js environment
-let pdfParseInitialized = false;
-
-async function initializePdfParse() {
-  if (pdfParseInitialized) return;
-
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    // Add minimal polyfills for PDF.js (required even for text extraction)
-    if (typeof globalThis.DOMMatrix === 'undefined') {
-      // Minimal DOMMatrix stub - PDF.js needs this even for text extraction
-      globalThis.DOMMatrix = class DOMMatrix {
-        constructor(init?: any) {
-          this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
-          if (Array.isArray(init) && init.length === 6) {
-            [this.a, this.b, this.c, this.d, this.e, this.f] = init;
-          }
-        }
-        a: number; b: number; c: number; d: number; e: number; f: number;
-      } as any;
-    }
-
-    // Configure worker for Node.js/Next.js environment
-    try {
-      const { PDFParse } = await import('pdf-parse');
-      const path = await import('path');
-      const { pathToFileURL } = await import('url');
-
-      // Set worker to the installed pdf-parse worker file (.mjs for Node.js)
-      const workerPath = path.join(
-        process.cwd(),
-        'node_modules',
-        'pdf-parse',
-        'dist',
-        'worker',
-        'pdf.worker.mjs'
-      );
-
-      const workerUrl = pathToFileURL(workerPath).href;
-      PDFParse.setWorker(workerUrl);
-
-      console.log('✅ PDF worker configured:', workerUrl);
-    } catch (error) {
-      console.warn('⚠️  Could not configure PDF worker, will use default:', error);
-    }
-  }
-
-  pdfParseInitialized = true;
-}
+// pdf-parse v1 is a simple function - serverless compatible
+import pdfParse from 'pdf-parse';
 
 export class PDFService {
   /**
@@ -90,27 +43,18 @@ export class PDFService {
   }
 
   /**
-   * Extract text from PDF buffer
+   * Extract text from PDF buffer using pdf-parse v1
    */
   static async extractText(buffer: Buffer): Promise<{
     text: string;
     pageCount: number;
   }> {
     try {
-      // Initialize polyfills before using pdf-parse
-      await initializePdfParse();
-
-      // Lazy load pdf-parse
-      const { PDFParse } = await import('pdf-parse');
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-
-      // Always call destroy() to free memory
-      await parser.destroy();
+      const result = await pdfParse(buffer);
 
       return {
         text: result.text,
-        pageCount: result.total,
+        pageCount: result.numpages,
       };
     } catch (error) {
       console.error('PDF Extraction Error:', error);
@@ -128,20 +72,21 @@ export class PDFService {
     pageCount: number;
   }> {
     try {
-      // Initialize polyfills before using pdf-parse
-      await initializePdfParse();
+      // Fetch PDF from URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+      }
 
-      // Lazy load pdf-parse - v2 API can fetch URLs directly
-      const { PDFParse } = await import('pdf-parse');
-      const parser = new PDFParse({ url });
-      const result = await parser.getText();
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-      // Always call destroy() to free memory
-      await parser.destroy();
+      // Use pdf-parse v1 to extract text
+      const result = await pdfParse(buffer);
 
       return {
         text: result.text,
-        pageCount: result.total,
+        pageCount: result.numpages,
       };
     } catch (error) {
       console.error('PDF Fetch and Extract Error:', error);
