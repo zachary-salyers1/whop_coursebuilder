@@ -8,6 +8,18 @@ export async function GET(request: NextRequest) {
     // Try to get user from Whop token
     const tokenResult = await whopSdk.verifyUserToken(headers);
 
+    // Log full token result to see what data we have
+    console.log('🔐 Token result:', JSON.stringify(tokenResult, null, 2));
+
+    // Log all headers to see what Whop sends
+    const allHeaders: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      if (key.toLowerCase().includes('whop') || key.toLowerCase().includes('company') || key.toLowerCase().includes('experience')) {
+        allHeaders[key] = value;
+      }
+    });
+    console.log('📋 Relevant headers:', JSON.stringify(allHeaders, null, 2));
+
     // Try to get company ID from various sources
     let companyId = headers.get('x-whop-company-id') || headers.get('whop-company-id');
 
