@@ -62,6 +62,9 @@ export default function UploadClient({ userId, userName, companyId }: { userId: 
       const formData = new FormData();
       formData.append('file', file);
       formData.append('userId', userId);
+      if (companyId) {
+        formData.append('companyId', companyId);
+      }
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',

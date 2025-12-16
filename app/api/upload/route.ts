@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const whopUserId = formData.get('userId') as string;
+    const formCompanyId = formData.get('companyId') as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -34,8 +35,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get company ID from headers
-    const companyId = request.headers.get('x-whop-company-id') || request.headers.get('whop-company-id');
+    // Get company ID from form data (preferred) or headers (for Whop proxy)
+    const companyId = formCompanyId ||
+                      request.headers.get('x-whop-company-id') ||
+                      request.headers.get('whop-company-id');
+
+    console.log('🏢 Upload API - companyId:', companyId, 'userId:', whopUserId);
 
     // Get or create user
     const user = await UserService.getOrCreateUser({
