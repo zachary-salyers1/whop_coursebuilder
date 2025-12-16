@@ -290,7 +290,7 @@ export default function DashboardClient({ userId, companyId: propCompanyId }: Da
                         </a>
                       )}
                       <Link
-                        href={`/preview/${gen.id}`}
+                        href={`/preview/${gen.id}${companyId ? `?companyId=${companyId}` : ''}`}
                         className="inline-flex items-center px-3 py-2 border-0 text-sm font-medium rounded-md"
                         style={{ color: 'var(--accent-11)', background: 'var(--accent-3)' }}
                       >

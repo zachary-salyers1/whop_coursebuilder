@@ -1,7 +1,7 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 
 interface Module {
@@ -44,10 +44,15 @@ interface Generation {
   modules: Module[];
 }
 
-export default function PreviewPage() {
+function PreviewPageContent() {
   const params = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<{ companyId?: string } | null>(null);
+  const searchParams = useSearchParams();
+
+  // Get company ID from URL query param first (B2B pattern), fallback to auth
+  const urlCompanyId = searchParams.get('companyId');
+
+  const [companyId, setCompanyId] = useState<string | null>(urlCompanyId);
   const [generation, setGeneration] = useState<Generation | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
@@ -61,18 +66,25 @@ export default function PreviewPage() {
 
   const generationId = params.id as string;
 
+  // Only fetch from auth if we don't have companyId from URL
   useEffect(() => {
+    if (urlCompanyId) {
+      console.log('✅ Using company ID from URL:', urlCompanyId);
+      setCompanyId(urlCompanyId);
+      return;
+    }
+
     const fetchUser = async () => {
       try {
-        console.log('👤 Fetching user data...');
+        console.log('👤 Fetching user data (no companyId in URL)...');
         const res = await fetch('/api/auth/me');
         const data = await res.json();
         console.log('📥 User API response:', data);
-        if (data.success) {
+        if (data.success && data.data.companyId) {
           console.log('✅ User data received:', data.data);
-          setUser(data.data);
+          setCompanyId(data.data.companyId);
         } else {
-          console.error('❌ User fetch failed:', data);
+          console.error('❌ User fetch failed or no companyId:', data);
         }
       } catch (error) {
         console.error('❌ Failed to fetch user:', error);
@@ -80,7 +92,7 @@ export default function PreviewPage() {
     };
 
     fetchUser();
-  }, []);
+  }, [urlCompanyId]);
 
   useEffect(() => {
     const fetchGeneration = async () => {
@@ -109,11 +121,12 @@ export default function PreviewPage() {
   }, [generationId]);
 
   const loadCourses = async () => {
-    if (!user?.companyId) return;
+    if (!companyId) return;
 
     setLoadingCourses(true);
     try {
-      const res = await fetch(`/api/courses/list?company_id=${user.companyId}`);
+      console.log('📋 Loading courses for company:', companyId);
+      const res = await fetch(`/api/courses/list?company_id=${companyId}`);
       const data = await res.json();
       if (data.success) {
         setCourses(data.courses);
@@ -130,8 +143,8 @@ export default function PreviewPage() {
   };
 
   const handlePublishClick = async () => {
-    if (!generation || !user?.companyId) {
-      alert('Missing generation or company data');
+    if (!generation || !companyId) {
+      alert('Missing generation or company data. Please navigate from the dashboard.');
       return;
     }
 
@@ -329,7 +342,7 @@ export default function PreviewPage() {
                   Edit Course
                 </Link>
                 <a
-                  href={`https://whop.com/hub/${user?.companyId}/experiences/${generation.whopExperienceId}`}
+                  href={`https://whop.com/hub/${companyId}/experiences/${generation.whopExperienceId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
@@ -537,7 +550,7 @@ export default function PreviewPage() {
                 <div className="py-8 text-center">
                   <p style={{ color: 'var(--gray-11)' }}>No courses found. Please create a course in the Whop Courses app first.</p>
                   <a
-                    href={`https://whop.com/hub/${user?.companyId}/courses`}
+                    href={`https://whop.com/hub/${companyId}/courses`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
@@ -614,5 +627,20 @@ function StatusBadge({ status }: { status: string }) {
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
+  );
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--gray-1)' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--accent-9)' }}></div>
+          <p style={{ color: 'var(--gray-11)' }}>Loading...</p>
+        </div>
+      </div>
+    }>
+      <PreviewPageContent />
+    </Suspense>
   );
 }
