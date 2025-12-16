@@ -9,7 +9,7 @@ export const maxDuration = 300; // 5 minutes max (requires Pro plan, otherwise 6
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pdfUploadId, userId: whopUserId, customTitle } = body;
+    const { pdfUploadId, userId: whopUserId, customTitle, companyId: bodyCompanyId } = body;
 
     if (!pdfUploadId || !whopUserId) {
       return NextResponse.json(
@@ -21,8 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get company ID from headers
-    const companyId = request.headers.get('x-whop-company-id') || request.headers.get('whop-company-id');
+    // Get company ID from body (preferred for client-side calls) or headers (for Whop proxy)
+    const companyId = bodyCompanyId ||
+                      request.headers.get('x-whop-company-id') ||
+                      request.headers.get('whop-company-id');
+
+    console.log('🏢 Generate API - companyId:', companyId, 'userId:', whopUserId);
 
     // Get or create user
     const user = await UserService.getOrCreateUser({

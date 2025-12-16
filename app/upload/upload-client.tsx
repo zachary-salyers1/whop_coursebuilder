@@ -84,6 +84,7 @@ export default function UploadClient({ userId, userName, companyId }: { userId: 
         body: JSON.stringify({
           pdfUploadId: uploadData.data.uploadId,
           userId: userId,
+          companyId: companyId,
           customTitle: courseName.trim() || undefined,
         }),
       });

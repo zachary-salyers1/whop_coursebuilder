@@ -13,7 +13,14 @@ export class UserService {
     email?: string;
     username?: string;
   }): Promise<User> {
-    const companyId = whopUserData.companyId || process.env.NEXT_PUBLIC_WHOP_COMPANY_ID!;
+    // Only use env fallback in development mode - production MUST have companyId from URL
+    const companyId = whopUserData.companyId ||
+      (process.env.NODE_ENV === 'development' ? process.env.NEXT_PUBLIC_WHOP_COMPANY_ID : undefined);
+
+    if (!companyId) {
+      console.error('❌ UserService: No companyId provided and not in development mode');
+      throw new Error('Company ID is required. Please navigate from the dashboard with a valid company context.');
+    }
 
     // Try to find existing user by BOTH whopUserId AND whopCompanyId
     const [existingUser] = await db
