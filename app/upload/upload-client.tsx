@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 
-export default function UploadClient({ userId, userName }: { userId: string; userName: string }) {
+export default function UploadClient({ userId, userName, companyId }: { userId: string; userName: string; companyId: string | null }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [courseName, setCourseName] = useState('');
@@ -94,8 +94,9 @@ export default function UploadClient({ userId, userName }: { userId: string; use
         throw new Error(generateData.error?.message || 'Generation failed');
       }
 
-      // Redirect to preview page
-      router.push(`/preview/${generateData.data.generationId}`);
+      // Redirect to preview page with companyId
+      const previewUrl = `/preview/${generateData.data.generationId}${companyId ? `?companyId=${companyId}` : ''}`;
+      router.push(previewUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setUploading(false);
@@ -117,7 +118,7 @@ export default function UploadClient({ userId, userName }: { userId: string; use
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/" className="text-sm font-medium" style={{ color: 'var(--accent-11)' }}>
+              <Link href={companyId ? `/dashboard/${companyId}` : '/'} className="text-sm font-medium" style={{ color: 'var(--accent-11)' }}>
                 ← Back to Dashboard
               </Link>
               <h1 className="text-3xl font-bold mt-2" style={{ color: 'var(--gray-12)' }}>Upload PDF</h1>
@@ -254,7 +255,7 @@ export default function UploadClient({ userId, userName }: { userId: string; use
           {/* Action Buttons */}
           <div className="mt-6 flex items-center justify-between">
             <Link
-              href="/"
+              href={companyId ? `/dashboard/${companyId}` : '/'}
               className="text-sm font-medium"
               style={{ color: 'var(--gray-11)' }}
             >

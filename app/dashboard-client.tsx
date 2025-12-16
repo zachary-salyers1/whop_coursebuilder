@@ -129,7 +129,7 @@ export default function DashboardClient({ userId, companyId: propCompanyId }: Da
                 Profile
               </Link>
               <Link
-                href="/upload"
+                href={`/upload${companyId ? `?companyId=${companyId}` : ''}`}
                 className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
                 style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
               >
