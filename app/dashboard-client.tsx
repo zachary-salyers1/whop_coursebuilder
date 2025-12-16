@@ -243,7 +243,7 @@ export default function DashboardClient({ userId, companyId: propCompanyId }: Da
               </p>
               <div className="mt-6">
                 <Link
-                  href="/upload"
+                  href={`/upload${companyId ? `?companyId=${companyId}` : ''}`}
                   className="inline-flex items-center px-4 py-2 border-0 shadow-sm text-sm font-medium rounded-md"
                   style={{ color: 'var(--accent-contrast)', background: 'var(--accent-9)' }}
                 >
