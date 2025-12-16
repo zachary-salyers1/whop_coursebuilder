@@ -9,6 +9,15 @@ const pdfParse = require('pdf-parse/lib/pdf-parse');
 
 export class PDFService {
   /**
+   * Sanitize text to remove null bytes and control characters that PostgreSQL can't handle
+   */
+  private static sanitizeText(text: string): string {
+    return text
+      .replace(/\0/g, '') // Remove null bytes
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' '); // Replace other control chars with space
+  }
+
+  /**
    * Upload PDF file to Vercel Blob storage
    */
   static async uploadPDF(file: File, userId: string): Promise<string> {
@@ -121,23 +130,27 @@ export class PDFService {
 
       console.log('processPDF: Extraction successful, text length:', text.length, 'pages:', pageCount);
 
+      // Sanitize text to remove null bytes and control characters
+      const sanitizedText = this.sanitizeText(text);
+      console.log('processPDF: Text sanitized, length:', sanitizedText.length);
+
       // Update database with extracted text
       await db
         .update(pdfUploads)
         .set({
-          rawText: text,
+          rawText: sanitizedText,
           pageCount,
           extractionStatus: 'ready',
           metadata: {
             extractedAt: new Date().toISOString(),
-            textLength: text.length,
+            textLength: sanitizedText.length,
           },
         })
         .where(eq(pdfUploads.id, pdfUploadId));
 
       console.log('processPDF: Database updated successfully');
 
-      return text;
+      return sanitizedText;
     } catch (error) {
       console.error('processPDF: Error occurred:', error);
 
