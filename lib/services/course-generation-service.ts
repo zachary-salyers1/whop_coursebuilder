@@ -351,10 +351,14 @@ export class CourseGenerationService {
 
   /**
    * Publish generated course to Whop
+   * @param generationId - The generation ID
+   * @param companyId - The company ID
+   * @param whopUserId - Optional Whop user ID to act on behalf of (required for B2B apps)
    */
   static async publishToWhop(
     generationId: string,
-    companyId: string
+    companyId: string,
+    whopUserId?: string
   ): Promise<CourseGenerationResult> {
     try {
       const generation = await this.getGeneration(generationId);
@@ -373,12 +377,12 @@ export class CourseGenerationService {
 
       const structure = generation.structureJson as unknown as CourseStructure;
 
-      // Publish to Whop
-      const result = await WhopAPIService.publishCourse(companyId, structure);
+      // Publish to Whop (passing whopUserId for B2B on-behalf-of)
+      const result = await WhopAPIService.publishCourse(companyId, structure, whopUserId);
 
       // Get or create a product for this course
       console.log('Listing existing products...');
-      const products = await WhopAPIService.listProducts(companyId);
+      const products = await WhopAPIService.listProducts(companyId, whopUserId);
 
       let productId: string;
 
@@ -500,10 +504,14 @@ export class CourseGenerationService {
 
   /**
    * Add generated content to an existing Whop course
+   * @param generationId - The generation ID
+   * @param courseId - The Whop course ID to add content to
+   * @param whopUserId - Optional Whop user ID to act on behalf of (required for B2B apps)
    */
   static async addToExistingCourse(
     generationId: string,
-    courseId: string
+    courseId: string,
+    whopUserId?: string
   ): Promise<CourseGenerationResult> {
     try {
       const generation = await this.getGeneration(generationId);
@@ -527,8 +535,8 @@ export class CourseGenerationService {
       const experienceId = courseDetails.experience_id || courseId;
       console.log('Course details:', { courseId, experienceId, hasExperience: !!courseDetails.experience_id });
 
-      // Add content to existing course
-      const result = await WhopAPIService.addContentToExistingCourse(courseId, structure);
+      // Add content to existing course (passing whopUserId for B2B on-behalf-of)
+      const result = await WhopAPIService.addContentToExistingCourse(courseId, structure, whopUserId);
 
       // Update generation record with the experience ID (or course ID as fallback)
       await db

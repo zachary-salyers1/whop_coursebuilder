@@ -66,16 +66,25 @@ export class WhopAPIService {
 
   /**
    * List all courses for a company
+   * @param companyId - The company ID to list courses for
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
-  static async listCourses(companyId: string): Promise<any[]> {
+  static async listCourses(companyId: string, userId?: string): Promise<any[]> {
     try {
-      console.log('Listing courses for company:', companyId);
+      console.log('Listing courses for company:', companyId, 'on behalf of:', userId);
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
 
       const response = await fetch(`https://api.whop.com/api/v1/courses?company_id=${companyId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -95,11 +104,16 @@ export class WhopAPIService {
 
   /**
    * Create experience (course container) in Whop
+   * @param companyId - The company ID to create the experience for
+   * @param title - The experience title
+   * @param description - The experience description
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async createExperience(
     companyId: string,
     title: string,
-    description: string
+    description: string,
+    userId?: string
   ): Promise<string> {
     try {
       const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
@@ -107,14 +121,21 @@ export class WhopAPIService {
         throw new Error('WHOP_APP_ID environment variable is not set');
       }
 
-      console.log('Creating experience with:', { companyId, title, appId });
+      console.log('Creating experience with:', { companyId, title, appId, userId });
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
 
       const response = await fetch('https://api.whop.com/api/v1/experiences', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           app_id: appId,
           company_id: companyId,
@@ -139,22 +160,35 @@ export class WhopAPIService {
 
   /**
    * Create a course (module) within an experience
+   * @param experienceId - The experience ID to create the course in
+   * @param title - The course title
+   * @param description - The course description
+   * @param orderIndex - The order index
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async createCourse(
     experienceId: string,
     title: string,
     description: string,
-    orderIndex: number
+    orderIndex: number,
+    userId?: string
   ): Promise<string> {
     try {
-      console.log('Creating course with:', { experienceId, title });
+      console.log('Creating course with:', { experienceId, title, userId });
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
 
       const response = await fetch('https://api.whop.com/api/v1/courses', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           experience_id: experienceId,
           title: title,
@@ -179,22 +213,35 @@ export class WhopAPIService {
 
   /**
    * Create a chapter within a course
+   * @param courseId - The course ID to create the chapter in
+   * @param title - The chapter title
+   * @param description - The chapter description
+   * @param orderIndex - The order index
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async createChapter(
     courseId: string,
     title: string,
     description: string,
-    orderIndex: number
+    orderIndex: number,
+    userId?: string
   ): Promise<string> {
     try {
-      console.log('Creating chapter with:', { courseId, title });
+      console.log('Creating chapter with:', { courseId, title, userId });
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
 
       const response = await fetch('https://api.whop.com/api/v1/course_chapters', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           course_id: courseId,
           title: title,
@@ -218,25 +265,38 @@ export class WhopAPIService {
 
   /**
    * Create a lesson within a chapter
+   * @param chapterId - The chapter ID to create the lesson in
+   * @param title - The lesson title
+   * @param content - The lesson content (markdown)
+   * @param orderIndex - The order index
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async createLesson(
     chapterId: string,
     title: string,
     content: string,
-    orderIndex: number
+    orderIndex: number,
+    userId?: string
   ): Promise<string> {
     try {
-      console.log('Creating lesson with:', { chapterId, title });
+      console.log('Creating lesson with:', { chapterId, title, userId });
 
       // Convert markdown to HTML for proper rendering in Whop
       const htmlContent = markdownToHtml(content);
 
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
+
       const response = await fetch('https://api.whop.com/api/v1/course_lessons', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           chapter_id: chapterId,
           lesson_type: 'text',
@@ -262,10 +322,14 @@ export class WhopAPIService {
 
   /**
    * Add chapters and lessons to an existing course
+   * @param courseId - The course ID to add content to
+   * @param structure - The course structure
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async addContentToExistingCourse(
     courseId: string,
-    structure: CourseStructure
+    structure: CourseStructure,
+    userId?: string
   ): Promise<{
     courseId: string;
     chaptersCreated: number;
@@ -280,7 +344,7 @@ export class WhopAPIService {
     }>;
   }> {
     try {
-      console.log('Adding content to existing course:', courseId);
+      console.log('Adding content to existing course:', courseId, 'on behalf of:', userId);
 
       let totalChapters = 0;
       let totalLessons = 0;
@@ -296,7 +360,8 @@ export class WhopAPIService {
             courseId,
             chapter.title,
             chapter.description,
-            chapter.order
+            chapter.order,
+            userId
           );
           console.log(`  Created chapter: ${chapter.title}`);
           totalChapters++;
@@ -310,7 +375,8 @@ export class WhopAPIService {
               chapterId,
               lesson.title,
               lesson.content,
-              lesson.order
+              lesson.order,
+              userId
             );
             console.log(`    Created lesson: ${lesson.title}`);
             totalLessons++;
@@ -345,10 +411,14 @@ export class WhopAPIService {
 
   /**
    * Publish complete course structure to Whop
+   * @param companyId - The company ID to publish to
+   * @param structure - The course structure to publish
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
   static async publishCourse(
     companyId: string,
-    structure: CourseStructure
+    structure: CourseStructure,
+    userId?: string
   ): Promise<{
     experienceId: string;
     courseUrl: string;
@@ -369,13 +439,14 @@ export class WhopAPIService {
     }>;
   }> {
     try {
-      console.log('Publishing course to Whop for company:', companyId);
+      console.log('Publishing course to Whop for company:', companyId, 'on behalf of:', userId);
 
       // 1. Create Experience (course container)
       const experienceId = await this.createExperience(
         companyId,
         structure.title,
-        structure.description
+        structure.description,
+        userId
       );
       console.log('Created experience:', experienceId);
 
@@ -391,7 +462,8 @@ export class WhopAPIService {
           experienceId,
           module.title,
           module.description,
-          module.order
+          module.order,
+          userId
         );
         console.log(`Created course (module): ${module.title}`);
         totalModules++;
@@ -405,7 +477,8 @@ export class WhopAPIService {
             courseId,
             chapter.title,
             chapter.description,
-            chapter.order
+            chapter.order,
+            userId
           );
           console.log(`  Created chapter: ${chapter.title}`);
           totalChapters++;
@@ -419,7 +492,8 @@ export class WhopAPIService {
               chapterId,
               lesson.title,
               lesson.content,
-              lesson.order
+              lesson.order,
+              userId
             );
             console.log(`    Created lesson: ${lesson.title}`);
             totalLessons++;
@@ -672,16 +746,25 @@ export class WhopAPIService {
 
   /**
    * List products for a company
+   * @param companyId - The company ID to list products for
+   * @param userId - Optional user ID to act on behalf of (required for B2B apps)
    */
-  static async listProducts(companyId: string): Promise<any[]> {
+  static async listProducts(companyId: string, userId?: string): Promise<any[]> {
     try {
-      console.log('Listing products for company:', companyId);
+      console.log('Listing products for company:', companyId, 'on behalf of:', userId);
+
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
+      };
+
+      // Add on-behalf-of header if userId provided (required for B2B apps)
+      if (userId) {
+        headers['x-on-behalf-of'] = userId;
+      }
 
       const response = await fetch(`https://api.whop.com/api/v1/products?company_id=${companyId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-        },
+        headers,
       });
 
       if (!response.ok) {

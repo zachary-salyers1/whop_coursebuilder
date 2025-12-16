@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CourseGenerationService } from '@/lib/services/course-generation-service';
+import { whopSdk } from '@/lib/whop-sdk';
 
 export async function POST(request: NextRequest) {
   console.log('📤 Publish API called');
@@ -21,12 +22,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the Whop user ID from auth headers for on-behalf-of (required for B2B apps)
+    let whopUserId: string | undefined;
+    try {
+      const tokenResult = await whopSdk.verifyUserToken(request.headers);
+      whopUserId = tokenResult.userId;
+      console.log('📤 Publish - authenticated Whop user:', whopUserId);
+    } catch (authError) {
+      console.log('📤 Publish - no auth token, using app-level access');
+    }
+
     console.log('🚀 Starting course content publish to Whop...');
 
-    // Add content to existing Whop course
+    // Add content to existing Whop course (passing whopUserId for B2B on-behalf-of)
     const result = await CourseGenerationService.addToExistingCourse(
       generationId,
-      courseId
+      courseId,
+      whopUserId
     );
 
     console.log('✅ Publish successful:', result);
