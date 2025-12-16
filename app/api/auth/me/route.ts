@@ -67,43 +67,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // If no company ID, try to get user's companies from Whop API
+    // Log what we have for company context
+    // Note: For B2B apps, companyId should come from URL path (/dashboard/[companyId])
+    // and be passed via query params when navigating. The API doesn't provide a way
+    // to list user companies - that's by design in Whop's B2B app architecture.
     console.log('🔍 Checking company ID. companyId:', companyId, 'experienceId:', experienceId);
 
-    if (!companyId) {
-      try {
-        // Try to get companies the user owns/manages
-        console.log('🔍 Fetching user companies via Whop API');
-        const companiesResponse = await fetch(`https://api.whop.com/api/v1/me/companies`, {
-          headers: {
-            'Authorization': `Bearer ${process.env.WHOP_API_KEY}`,
-            'X-On-Behalf-Of': tokenResult.userId,
-          },
-        });
-
-        console.log('📊 Companies API status:', companiesResponse.status);
-
-        if (companiesResponse.ok) {
-          const companiesData = await companiesResponse.json();
-          console.log('📊 Companies API response:', JSON.stringify(companiesData).substring(0, 500));
-
-          if (companiesData.data && companiesData.data.length > 0) {
-            companyId = companiesData.data[0].id;
-            console.log('✅ Got company ID from user companies:', companyId);
-          }
-        } else {
-          const errorText = await companiesResponse.text();
-          console.error('❌ Companies API error:', companiesResponse.status, errorText);
-        }
-      } catch (error) {
-        console.error('❌ Failed to fetch user companies:', error);
-      }
-    }
-
-    // Final fallback to env (only for development/testing)
-    if (!companyId && process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
+    // Only use env fallback in development mode
+    if (!companyId && process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_WHOP_COMPANY_ID) {
       companyId = process.env.NEXT_PUBLIC_WHOP_COMPANY_ID;
-      console.log('📍 Using fallback company ID from env:', companyId);
+      console.log('📍 Using development fallback company ID from env:', companyId);
     }
 
     console.log('🔍 Auth debug:', {
