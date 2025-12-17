@@ -106,8 +106,14 @@ export class CourseGenerationService {
     pdfUploadId: string
   ): Promise<void> {
     const startTime = Date.now();
+    const logStep = (step: string) => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`⏱️ [${elapsed}s] Generation ${generationId}: ${step}`);
+    };
 
     try {
+      logStep('Starting background generation');
+
       // 1. Get PDF upload record
       const [pdfUpload] = await db
         .select()
@@ -117,19 +123,22 @@ export class CourseGenerationService {
       if (!pdfUpload) {
         throw new Error('PDF upload not found');
       }
+      logStep('PDF upload record found');
 
       // 2. Ensure PDF text is extracted
       let pdfText = pdfUpload.rawText;
 
       if (!pdfText) {
-        console.log('PDF text not found, extracting from URL:', pdfUpload.fileUrl);
+        logStep('PDF text not found, extracting from URL...');
         try {
           pdfText = await PDFService.processPDF(pdfUploadId);
-          console.log('PDF text extracted, length:', pdfText?.length || 0);
+          logStep(`PDF text extracted, length: ${pdfText?.length || 0} chars`);
         } catch (extractError) {
           console.error('PDF extraction failed:', extractError);
           throw extractError;
         }
+      } else {
+        logStep(`PDF text already available, length: ${pdfText.length} chars`);
       }
 
       if (!pdfText) {
@@ -137,17 +146,21 @@ export class CourseGenerationService {
       }
 
       // 3. Analyze PDF structure with AI
+      logStep('Starting AI PDF analysis...');
       const analysis = await AIService.analyzePDF({
         pdfText,
         filename: pdfUpload.filename,
       });
+      logStep(`AI analysis complete - ${analysis.estimatedLessons} lessons planned`);
 
       // 4. Generate full content with AI
+      logStep('Starting AI content generation...');
       const content = await AIService.generateContent({
         structure: analysis,
         pdfText,
         tone: 'professional',
       });
+      logStep(`AI content generation complete - ${content.modules.length} modules`);
 
       // 5. Save course structure to database
       const courseStructure: CourseStructure = {
@@ -174,10 +187,13 @@ export class CourseGenerationService {
       };
 
       // 6. Save to database
+      logStep('Saving course structure to database...');
       await this.saveCourseStructure(generationId, courseStructure);
+      logStep('Course structure saved');
 
       // 7. Update generation record with AI-generated title and completion status
       const generationTime = Date.now() - startTime;
+      logStep('Updating generation status to completed...');
 
       // Get current generation to check if custom title was provided
       const [currentGen] = await db
@@ -214,8 +230,11 @@ export class CourseGenerationService {
         },
         createdAt: new Date(),
       });
+
+      logStep(`✅ GENERATION COMPLETE in ${(generationTime / 1000).toFixed(1)}s`);
     } catch (error) {
-      console.error('Process Generation Error:', error);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.error(`❌ [${elapsed}s] Generation ${generationId} FAILED:`, error);
 
       // Update generation status to failed
       await db
