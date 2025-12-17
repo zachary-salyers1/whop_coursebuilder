@@ -55,6 +55,22 @@ export async function POST(request: NextRequest) {
         console.log('Background generation completed for:', result.generationId);
       } catch (error) {
         console.error('Background generation error:', error);
+        // Ensure generation is marked as failed even if processGenerationBackground didn't catch it
+        try {
+          const { db } = await import('@/lib/db/client');
+          const { courseGenerations } = await import('@/lib/db/schema');
+          const { eq } = await import('drizzle-orm');
+          await db.update(courseGenerations)
+            .set({
+              status: 'failed',
+              errorMessage: error instanceof Error ? error.message : 'Background processing failed',
+              updatedAt: new Date(),
+            })
+            .where(eq(courseGenerations.id, result.generationId));
+          console.log('Marked generation as failed:', result.generationId);
+        } catch (dbError) {
+          console.error('Failed to update generation status:', dbError);
+        }
       }
     });
 
