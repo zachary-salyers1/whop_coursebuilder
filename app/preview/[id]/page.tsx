@@ -332,7 +332,7 @@ function PreviewPageContent() {
                   View Course →
                 </Link>
                 <Link
-                  href={`/edit/${generation.whopExperienceId}`}
+                  href={`/edit/${generation.whopExperienceId}${companyId ? `?companyId=${companyId}` : ''}`}
                   className="inline-flex items-center px-6 py-3 border-0 text-base font-medium rounded-md shadow-sm"
                   style={{ color: 'var(--gray-12)', background: 'var(--gray-4)', border: '1px solid var(--gray-a6)' }}
                 >

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -45,7 +45,9 @@ interface Toast {
 
 export default function CourseEditorPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const experienceId = params.experienceId as string;
+  const companyId = searchParams.get('companyId');
 
   const [experience, setExperience] = useState<Experience | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -103,7 +105,7 @@ export default function CourseEditorPage() {
     if (!experienceId) return;
 
     try {
-      const response = await fetch(`/api/course/experience/${experienceId}`);
+      const response = await fetch(`/api/course/experience/${experienceId}${companyId ? `?companyId=${companyId}` : ''}`);
       const data = await response.json();
 
       if (data.success) {
@@ -210,7 +212,7 @@ export default function CourseEditorPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/course/lesson/${selectedLesson.id}`, {
+      const response = await fetch(`/api/course/lesson/${selectedLesson.id}${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -276,7 +278,7 @@ export default function CourseEditorPage() {
   // Chapter operations
   const saveChapterTitle = async (chapterId: string) => {
     try {
-      const response = await fetch(`/api/course/chapter/${chapterId}`, {
+      const response = await fetch(`/api/course/chapter/${chapterId}${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editingChapterTitle }),
@@ -298,7 +300,7 @@ export default function CourseEditorPage() {
     if (!newChapterTitle.trim() || !targetCourseId) return;
 
     try {
-      const response = await fetch('/api/course/chapter', {
+      const response = await fetch(`/api/course/chapter${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courseId: targetCourseId, title: newChapterTitle }),
@@ -319,7 +321,7 @@ export default function CourseEditorPage() {
 
   const deleteChapter = async (chapterId: string) => {
     try {
-      const response = await fetch(`/api/course/chapter/${chapterId}`, {
+      const response = await fetch(`/api/course/chapter/${chapterId}${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'DELETE',
       });
 
@@ -344,7 +346,7 @@ export default function CourseEditorPage() {
     if (!newLessonTitle.trim() || !targetChapterId) return;
 
     try {
-      const response = await fetch('/api/course/lesson', {
+      const response = await fetch(`/api/course/lesson${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -370,7 +372,7 @@ export default function CourseEditorPage() {
 
   const deleteLesson = async (lessonId: string) => {
     try {
-      const response = await fetch(`/api/course/lesson/${lessonId}`, {
+      const response = await fetch(`/api/course/lesson/${lessonId}${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'DELETE',
       });
 
@@ -394,7 +396,7 @@ export default function CourseEditorPage() {
   // Course title operations
   const saveCourseTitle = async (courseId: string) => {
     try {
-      const response = await fetch(`/api/course/module/${courseId}`, {
+      const response = await fetch(`/api/course/module/${courseId}${companyId ? `?companyId=${companyId}` : ''}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editingCourseTitle }),

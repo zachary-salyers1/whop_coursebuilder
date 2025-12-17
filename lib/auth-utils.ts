@@ -6,12 +6,15 @@ import type { User } from './types/database';
 export async function getUserFromRequest(request: NextRequest): Promise<User | null> {
   try {
     const headers = request.headers;
+    const url = new URL(request.url);
 
     // Try to get user from Whop token
     const tokenResult = await whopSdk.verifyUserToken(headers);
 
-    // Get company ID from headers
-    const companyId = headers.get('x-whop-company-id') || headers.get('whop-company-id');
+    // Get company ID from query params (preferred for client-side), then headers (for Whop proxy)
+    const companyId = url.searchParams.get('companyId') ||
+                      headers.get('x-whop-company-id') ||
+                      headers.get('whop-company-id');
 
     // Get or create user in database
     const user = await UserService.getOrCreateUser({
