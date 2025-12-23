@@ -82,8 +82,14 @@ export default function CourseViewerPage() {
             const firstCourse = data.data.courses[0];
             setSelectedCourse(firstCourse);
             console.log('First course:', firstCourse);
-            if (firstCourse.chapters?.length > 0 && firstCourse.chapters[0].lessons?.length > 0) {
-              setSelectedLesson(firstCourse.chapters[0].lessons[0]);
+
+            // Auto-expand first course and first chapter for better desktop UX
+            setExpandedCourses(new Set([firstCourse.id]));
+            if (firstCourse.chapters?.length > 0) {
+              setExpandedChapters(new Set([firstCourse.chapters[0].id]));
+              if (firstCourse.chapters[0].lessons?.length > 0) {
+                setSelectedLesson(firstCourse.chapters[0].lessons[0]);
+              }
             }
           } else {
             console.warn('No courses found in experience');

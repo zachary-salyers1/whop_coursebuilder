@@ -1,6 +1,18 @@
 import { whopSdk } from "@/lib/whop-sdk";
 import { headers } from "next/headers";
 
+// Timeout wrapper to prevent infinite loading
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+	return Promise.race([
+		promise,
+		new Promise<never>((_, reject) =>
+			setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+		),
+	]);
+}
+
+const SDK_TIMEOUT_MS = 10000; // 10 second timeout for SDK calls
+
 export default async function ExperiencePage({
 	params,
 }: {
@@ -14,7 +26,7 @@ export default async function ExperiencePage({
 
 	// Check if we're in development mode without whop-proxy
 	const isDevelopment = process.env.NODE_ENV === 'development';
-	
+
 	let userId: string;
 	let result: any;
 	let user: any;
@@ -22,16 +34,28 @@ export default async function ExperiencePage({
 
 	try {
 		// Try to get the user token from headers (when whop-proxy is running)
-		const tokenResult = await whopSdk.verifyUserToken(headersList);
+		// Use timeout to prevent infinite loading
+		const tokenResult = await withTimeout(
+			whopSdk.verifyUserToken(headersList),
+			SDK_TIMEOUT_MS,
+			'Timeout verifying user token'
+		);
 		userId = tokenResult.userId;
 
-		result = await whopSdk.access.checkIfUserHasAccessToExperience({
-			userId,
-			experienceId,
-		});
+		// Fetch access, user, and experience data in parallel with timeout
+		const [accessResult, userData, experienceData] = await withTimeout(
+			Promise.all([
+				whopSdk.access.checkIfUserHasAccessToExperience({ userId, experienceId }),
+				whopSdk.users.getUser({ userId }),
+				whopSdk.experiences.getExperience({ experienceId }),
+			]),
+			SDK_TIMEOUT_MS,
+			'Timeout loading experience data'
+		);
 
-		user = await whopSdk.users.getUser({ userId });
-		experience = await whopSdk.experiences.getExperience({ experienceId });
+		result = accessResult;
+		user = userData;
+		experience = experienceData;
 	} catch (error) {
 		if (isDevelopment) {
 			// Development fallback when whop-proxy is not running

@@ -55,10 +55,7 @@ export class CourseGenerationService {
         })
         .returning();
 
-      // 4. Increment usage
-      await SubscriptionService.incrementUsage(request.userId, generation.id);
-
-      // 5. Log start event
+      // 4. Log start event (usage will be incremented only on successful completion)
       await db.insert(usageEvents).values({
         userId: request.userId,
         generationId: generation.id,
@@ -219,7 +216,12 @@ export class CourseGenerationService {
         })
         .where(eq(courseGenerations.id, generationId));
 
-      // 8. Log completion event
+      // 8. Increment usage ONLY on successful completion
+      // This ensures failed generations don't consume the user's quota
+      await SubscriptionService.incrementUsage(pdfUpload.userId, generationId);
+      logStep('Usage incremented for successful generation');
+
+      // 9. Log completion event
       await db.insert(usageEvents).values({
         userId: pdfUpload.userId,
         generationId,
